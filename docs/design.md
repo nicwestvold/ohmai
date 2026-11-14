@@ -6,6 +6,39 @@ ohmai ("oh my ai") is a macOS menu bar app that:
 
 For each agent's hooks and data formats, see [agent-integrations.md](agent-integrations.md).
 
+## v1 scope
+
+**In:**
+- automatic keep-awake
+- opt-in lid-closed mode
+- Claude Code, Codex and pi
+- monthly usage vs. last month
+- the Ω face icon
+- launch at login
+- in-app updates
+
+**Later:**
+- plan-limit bars and the Dizzy expression
+- metrics window
+- notifications, e.g. "agent waiting on you". The agents already notify, so revisit if needed.
+
+## Platform and principles
+
+- **macOS 26+**, built with Xcode 27 / Swift 6 / SwiftUI. Current macOS is 27; supporting one major version back covers everything this app needs.
+- **Launch at login:** on by default, via `SMAppService.mainApp`, with a toggle in Settings.
+- **Privacy:**
+  - ohmai reads agent transcripts, which contain your code and prompts. It extracts **only usage numbers and session metadata** (agent, model, project path, timestamps, token counts) and stores nothing else.
+  - It makes **no network calls** except the update check (below).
+  - Promise this in the README, and keep it true in the code: a single module owns transcript parsing and returns only usage records.
+- **Pricing:** a per-model price table bundled with the app and updated with releases. Nothing is fetched.
+- **Updates:** in-app via Sparkle 2, using the signed (EdDSA) appcast that Sparkle requires. This is the **one** network call:
+  - it fetches only the appcast
+  - Sparkle's system-profile reporting is off, so nothing about the Mac or usage is sent
+  - "Check for updates automatically" is a toggle in Settings
+- **Testing:**
+  - The `Policy` and lease logic get pure unit tests.
+  - Each adapter is tested against fixture files built from real session files, with message content replaced. When an agent update changes its format, it should show up as a failing test, not as wrong numbers.
+
 ## Menu bar UI
 
 The **menu bar icon** must answer "is an agent running?" at a glance, without opening the dropdown. Idle and working must differ in *shape*, not just fill or a subtle tint, and be legible at 16px on light and dark menu bars. Concepts: https://claude.ai/artifact/BoCobNp2RZPWWWiUc8gfnN.
@@ -73,7 +106,8 @@ The **dropdown** shows what's running and the month's token usage. Keep-awake co
 - **Watchers:** FSEvents over the transcript and rollout directories. Imports are incremental: store a byte offset per file and never re-read from the start.
 - **Distribution:** built for personal use first, possibly open-sourced later. It can't use the App Store sandbox, because it reads `~/.claude`, `~/.codex` and `~/.pi`.
   - **Signing:** the user's existing paid Developer ID account. Register app IDs for the app and the lid helper, and sign with Developer ID Application + notarization from day one, so builds behave like release builds (helper approval, Gatekeeper).
-  - **If open-sourced:** signed and notarized releases via a Homebrew cask. People building from source sign with their own team ID, so the helper's code-signing requirement must take the team ID from build settings, not hard-code it.
+  - **Releases:** signed and notarized DMG/zip, with the Sparkle appcast hosted alongside (e.g. GitHub Releases). A Homebrew cask can point at the same artifacts.
+  - **If open-sourced:** People building from source sign with their own team ID, so the helper's code-signing requirement must take the team ID from build settings, not hard-code it.
 
 ## Activity and leases
 
@@ -196,4 +230,5 @@ ohmai's Settings → Integrations page installs and checks each one:
 3. Claude adapter (hooks + liveness), so keep-awake works end to end
 4. Codex adapter (rollout watcher), pi adapter (extension)
 5. Ledger + incremental import, month-to-date vs. last month in the dropdown
-6. Later: statusline tee for limits, metrics window
+6. Launch at login, Sparkle updates, release pipeline (sign, notarize, appcast)
+7. Later: statusline tee for limits + Dizzy, metrics window, notifications
