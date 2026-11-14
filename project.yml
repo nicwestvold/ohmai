@@ -20,6 +20,12 @@ targets:
     platform: macOS
     sources:
       - path: App
+      # SMAppService.daemon(plistName:) looks for the plist here.
+      - path: LidHelper/LaunchDaemons/com.westvold.ohmai.lidhelper.plist
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchDaemons
     settings:
       base:
         INFOPLIST_FILE: App/Info.plist
@@ -30,6 +36,38 @@ targets:
         product: OhmaiCore
       - package: OhmaiCore
         product: OhmaiPower
+      - package: OhmaiCore
+        product: OhmaiLidXPC
+      # The launchd plist's BundleProgram points at Contents/MacOS/ohmai-lidhelper.
+      - target: ohmai-lidhelper
+        embed: true
+        codeSign: false  # signed by its own target, with its own identifier
+        copy:
+          destination: executables
+
+  # Root launchd daemon. Logic lives in OhmaiLidHelperCore; see docs/design.md.
+  ohmai-lidhelper:
+    type: tool
+    platform: macOS
+    sources:
+      - path: LidHelper
+        excludes:
+          - "Info.plist"
+          - "LaunchDaemons/**"
+    settings:
+      base:
+        PRODUCT_NAME: ohmai-lidhelper
+        PRODUCT_BUNDLE_IDENTIFIER: com.westvold.ohmai.lidhelper
+        INFOPLIST_FILE: LidHelper/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        # A bare executable has no bundle, so embed Info.plist (team ID, version) in the binary.
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: OhmaiCore
+        product: OhmaiLidHelperCore
+      - package: OhmaiCore
+        product: OhmaiLidXPC
 
 schemes:
   ohmai:
@@ -40,3 +78,4 @@ schemes:
       targets:
         - package: OhmaiCore/OhmaiCoreTests
         - package: OhmaiCore/OhmaiPowerTests
+        - package: OhmaiCore/OhmaiLidHelperCoreTests
