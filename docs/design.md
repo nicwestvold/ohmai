@@ -8,7 +8,7 @@ For each agent's hooks and data formats, see [agent-integrations.md](agent-integ
 
 ## Menu bar UI
 
-The **menu bar icon** shows the state at a glance:
+The **menu bar icon** must answer "is an agent running?" at a glance, without opening the dropdown. Idle and working must differ in *shape*, not just fill or a subtle tint, and be legible at 16px on light and dark menu bars. Concepts: https://claude.ai/artifact/BoCobNp2RZPWWWiUc8gfnN. States:
 - outline: no agents running
 - filled: agent(s) busy
 - dot badge: an agent is waiting on you
