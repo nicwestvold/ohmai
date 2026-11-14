@@ -149,7 +149,9 @@ The policy is pure and fully unit-tested. `now` is an input, not a clock read, s
 **Edge cases:**
 - Battery floors are "below" in the strict sense: exactly at the floor counts as OK, for both the general floor and the lid-closed floor.
 - An unreadable charge, or an unknown power source, counts as below the floor. When in doubt, release.
-- A thermal state macOS adds in the future is treated as `.critical`. The menu bar always shows the current decision and its reason, e.g. "Awake: 2 agents · on AC".
+- A thermal state macOS adds in the future is treated as `.critical`.
+
+The menu bar always shows the current decision and its reason, e.g. "Awake: 2 agents · on AC".
 
 **Idle-sleep assertion:** `IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleSystemSleep, …)` with the reason `"ohmai: <n> agent session(s) active"`. Optionally, `PreventUserIdleDisplaySleep` keeps the screen on too.
 
@@ -229,6 +231,26 @@ ohmai's Settings → Integrations page installs and checks each one:
 | Claude Code | Nothing required (watches `~/.claude/sessions/`). Optional plugin with `http` hooks as a cross-check; statusline wrapper that chains the existing command | Never overwrite the user's statusline; wrap it |
 | Codex | Nothing required (watches rollouts). Optional `~/.codex/hooks.json` for approval-waiting | Hooks must be approved once in Codex; unapproved hooks fail silently, so Settings shows whether hook events have actually arrived |
 | pi | `~/.pi/agent/extensions/ohmai.ts` | — |
+
+## Performance budget
+
+ohmai runs all day in the background, so it must cost nothing when idle and stay small when busy. The energy cost of *keeping the Mac awake* is the point of the app, and the power policy bounds it. This budget covers ohmai's own overhead.
+
+| | Budget |
+|---|---|
+| Idle (no leases) | 0% CPU, **no timers**. Wakes only for OS notifications (power source, Low Power Mode, thermal state, system wake) and incoming hook or file events. |
+| Leases held | A single timer, set for the earliest lease expiry (2s tolerance so the OS can coalesce it). No fixed-interval polling. |
+| Memory | Physical footprint under 30 MB at steady state (step 1 measured 17 MB). |
+| Dropdown | Live-updating views (e.g. "busy 4m") only update while the dropdown is open. Usage totals are cached, not queried on each render. |
+
+**Rules for later steps:**
+- **File watching:** FSEvents with a few seconds of latency to coalesce bursts. Agents append to transcripts many times a second during a busy session; handle a batch, not every write. Never poll directories.
+- **Imports:** incremental from a stored byte offset, streaming line by line, never reading a whole file into memory. Decode only the usage fields. Run at `.utility` QoS, or `.background` for the first-run import of history, off the main actor.
+- **First-run import:** resumable (offsets are committed as it goes), so quitting or crashing midway doesn't start over.
+- **Pid liveness checks** (step 3): run only while leases exist, folded into the expiry timer, not a separate poll.
+- **Lid helper renewals** (every 30s) run only while lid-closed mode is engaged.
+- **Ledger:** aggregates are recomputed after an import batch and cached for the UI.
+- **Check it:** `top -pid <pid> -stats pid,cpu,mem,idlew,power` over a few minutes, idle and with an agent busy. A regression against this table is a bug.
 
 ## Build order
 
