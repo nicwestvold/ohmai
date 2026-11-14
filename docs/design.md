@@ -66,8 +66,8 @@ The **dropdown** shows what's running and the month's token usage. Keep-awake co
 - **Ingest:** a localhost HTTP listener for Claude `http` hooks, plus an `ohmai` CLI for `command` hooks, the statusline tee and the pi extension. Everything converges on a single event type.
 - **Watchers:** FSEvents over the transcript and rollout directories. Imports are incremental: store a byte offset per file and never re-read from the start.
 - **Distribution:** built for personal use first, possibly open-sourced later. It can't use the App Store sandbox, because it reads `~/.claude`, `~/.codex` and `~/.pi`.
-  - **Personal:** build from source and sign with your own Apple Development certificate. The lid helper's caller check uses your team ID.
-  - **If open-sourced:** publish source, plus optional signed and notarized releases via a Homebrew cask (needs a paid Developer ID). People building from source sign with their own team ID, so the helper's code-signing requirement must take the team ID from build settings, not hard-code it.
+  - **Signing:** the user's existing paid Developer ID account. Register app IDs for the app and the lid helper, and sign with Developer ID Application + notarization from day one, so builds behave like release builds (helper approval, Gatekeeper).
+  - **If open-sourced:** signed and notarized releases via a Homebrew cask. People building from source sign with their own team ID, so the helper's code-signing requirement must take the team ID from build settings, not hard-code it.
 
 ## Activity and leases
 
@@ -179,8 +179,8 @@ ohmai's Settings → Integrations page installs and checks each one:
 
 | Agent | Installs | Notes |
 |---|---|---|
-| Claude Code | Plugin with `http` hooks; statusline wrapper that chains the existing command | Never overwrite the user's statusline; wrap it |
-| Codex | Nothing required (watches rollouts). Optional `~/.codex/hooks.json` for approval-waiting | Hooks must be approved once in Codex |
+| Claude Code | Nothing required (watches `~/.claude/sessions/`). Optional plugin with `http` hooks as a cross-check; statusline wrapper that chains the existing command | Never overwrite the user's statusline; wrap it |
+| Codex | Nothing required (watches rollouts). Optional `~/.codex/hooks.json` for approval-waiting | Hooks must be approved once in Codex; unapproved hooks fail silently, so Settings shows whether hook events have actually arrived |
 | pi | `~/.pi/agent/extensions/ohmai.ts` | — |
 
 ## Build order
