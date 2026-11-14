@@ -19,6 +19,11 @@ struct MenuContent: View {
             Text(powerLine)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if let error = model.lidSession.lastError, model.prefsStore.prefs.lidClosedModeEnabled {
+                Text(error.description)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
             if let error = model.assertionError {
                 Text("Couldn't hold the power assertion (IOReturn \(error.code))")
                     .font(.caption)
@@ -31,6 +36,7 @@ struct MenuContent: View {
         }
         .padding(14)
         .frame(width: 320)
+        .onAppear { model.lidRegistration.refresh() }
     }
 
     @ViewBuilder

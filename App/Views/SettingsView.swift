@@ -28,6 +28,8 @@ struct SettingsView: View {
                 }
             }
 
+            LidClosedSection(model: model)
+
             Section("Updates") {
                 Toggle("Check for updates automatically", isOn: automaticChecks)
                     .disabled(!model.updater.canCheckForUpdates)

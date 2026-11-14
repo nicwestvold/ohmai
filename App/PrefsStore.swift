@@ -23,6 +23,8 @@ final class PrefsStore {
         static let batteryFloorPercent = "batteryFloorPercent"
         static let signalTimeout = "signalTimeoutSeconds"
         static let waitingCap = "waitingCapSeconds"
+        static let lidClosedModeEnabled = "lidClosedModeEnabled"
+        static let lidClosedBatteryFloorPercent = "lidClosedBatteryFloorPercent"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -34,12 +36,15 @@ final class PrefsStore {
             Key.batteryFloorPercent: d.batteryFloorPercent,
             Key.signalTimeout: d.signalTimeout,
             Key.waitingCap: d.waitingCap,
+            Key.lidClosedModeEnabled: d.lidClosedModeEnabled,
+            Key.lidClosedBatteryFloorPercent: d.lidClosedBatteryFloorPercent,
         ])
-        // Lid-closed prefs are added with the lid helper (build step 2).
         prefs = Prefs(
             keepAwakeEnabled: defaults.bool(forKey: Key.keepAwakeEnabled),
             keepDisplayAwake: defaults.bool(forKey: Key.keepDisplayAwake),
             batteryFloorPercent: defaults.integer(forKey: Key.batteryFloorPercent),
+            lidClosedModeEnabled: defaults.bool(forKey: Key.lidClosedModeEnabled),
+            lidClosedBatteryFloorPercent: defaults.integer(forKey: Key.lidClosedBatteryFloorPercent),
             signalTimeout: defaults.double(forKey: Key.signalTimeout),
             waitingCap: defaults.double(forKey: Key.waitingCap)
         )
@@ -51,5 +56,7 @@ final class PrefsStore {
         defaults.set(prefs.batteryFloorPercent, forKey: Key.batteryFloorPercent)
         defaults.set(prefs.signalTimeout, forKey: Key.signalTimeout)
         defaults.set(prefs.waitingCap, forKey: Key.waitingCap)
+        defaults.set(prefs.lidClosedModeEnabled, forKey: Key.lidClosedModeEnabled)
+        defaults.set(prefs.lidClosedBatteryFloorPercent, forKey: Key.lidClosedBatteryFloorPercent)
     }
 }

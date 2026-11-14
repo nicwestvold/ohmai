@@ -79,8 +79,9 @@ Main components:
 
 | Path | What |
 |---|---|
-| `Packages/OhmaiCore` | Local Swift package. `OhmaiCore`: domain types, leases and `Policy`, Foundation only, no I/O. `OhmaiPower`: `PowerMonitor`, `AssertionManager` (IOKit). |
-| `App/` | The app target: composition root, `AppModel`, SwiftUI views, the `Updater` seam |
+| `Packages/OhmaiCore` | Local Swift package. `OhmaiCore`: domain types, leases and `Policy`, Foundation only, no I/O. `OhmaiPower`: `PowerMonitor`, `AssertionManager` (IOKit), the lid helper client and `LidSession`. `OhmaiLidXPC`: the XPC contract. `OhmaiLidHelperCore`: everything the root helper does (`LidController` is the dead-man switch). |
+| `App/` | The app target: composition root, `AppModel`, SwiftUI views, the `Updater` seam, helper registration |
+| `LidHelper/` | The root helper's `main.swift` (wiring only), its Info.plist and launchd plist |
 | `Config/*.xcconfig` | Signing, versions, `OHMAI_TEAM_ID`, `OHMAI_UPDATES_ENABLED`. Per-developer overrides go in `Config/Local.xcconfig` (gitignored). |
 | `project.yml` | XcodeGen spec. `ohmai.xcodeproj` is generated, not committed. |
 
