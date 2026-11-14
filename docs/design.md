@@ -21,11 +21,11 @@ The **dropdown** shows what's running and the month's token usage. Keep-awake co
    ● Claude Code   ohmai/        busy 4m
    ● Codex         gwt/          waiting on you
  ───────────────────────────────────────────
- November tokens             vs Oct 1–14
-   Claude Code     48.2M          ▲ 23%
-   Codex           12.1M          ▼  8%
-   pi               3.4M            new
-   Total           63.7M          ▲ 15%
+ November usage                     vs Oct 1–14
+   Claude Code    48.2M   ~$212       ▲ 23%
+   Codex          12.1M    ~$41       ▼  8%
+   pi              3.4M    ~$18         new
+   Total          63.7M   ~$271       ▲ 15%
  ───────────────────────────────────────────
  Settings…                              Quit
 ```
@@ -65,7 +65,9 @@ The **dropdown** shows what's running and the month's token usage. Keep-awake co
 - **App:** SwiftUI `MenuBarExtra`, `LSUIElement` (menu bar only, no Dock icon), macOS 14+.
 - **Ingest:** a localhost HTTP listener for Claude `http` hooks, plus an `ohmai` CLI for `command` hooks, the statusline tee and the pi extension. Everything converges on a single event type.
 - **Watchers:** FSEvents over the transcript and rollout directories. Imports are incremental: store a byte offset per file and never re-read from the start.
-- **Distribution:** Developer ID signing plus notarization, via a Homebrew cask. It can't use the App Store sandbox, because it reads `~/.claude`, `~/.codex` and `~/.pi`.
+- **Distribution:** built for personal use first, possibly open-sourced later. It can't use the App Store sandbox, because it reads `~/.claude`, `~/.codex` and `~/.pi`.
+  - **Personal:** build from source and sign with your own Apple Development certificate. The lid helper's caller check uses your team ID.
+  - **If open-sourced:** publish source, plus optional signed and notarized releases via a Homebrew cask (needs a paid Developer ID). People building from source sign with their own team ID, so the helper's code-signing requirement must take the team ID from build settings, not hard-code it.
 
 ## Activity and leases
 
@@ -76,7 +78,7 @@ The **dropdown** shows what's running and the month's token usage. Keep-awake co
   - the pid is dead
   - the pid's start time no longer matches (pid reused)
 - Expiry covers crashes, `kill -9` and Claude's missing Esc hook.
-- **Waiting keeps the Mac awake by default**, so a pending approval can still be answered later. Prefs offer three choices: awake / awake for N min / allow sleep.
+- **Waiting is not the same as busy.** A session waiting on you (an approval or question) holds a *capped* lease: it keeps the Mac awake for up to 1 hour (configurable) after waiting starts, then releases even if the session is still alive. Busy leases have no cap, only signal-based expiry. A waiting lease never keeps a closed lid awake.
 
 ## Power policy
 
@@ -147,7 +149,7 @@ The helper, not the app, guarantees the setting is turned back off:
 
 All of the following must hold:
 - Lid-closed mode is enabled and the helper is approved
-- At least one `busy` lease. By default a lease that is only `waiting` does **not** keep a closed lid awake; there's a pref to change this.
+- At least one `busy` lease. A lease that is only `waiting` never keeps a closed lid awake.
 - On AC, or on battery above the lid-closed floor
 - Thermal state is nominal or fair
 
@@ -161,7 +163,8 @@ All of the following must hold:
   - Codex: rollout `token_count`
   - pi: session `usage`, plus forwarded headers if that turns out to work
 - **Headline number:** tokens this month per agent, compared with the same days of last month (see Menu bar UI).
-  - **Open decision:** whether cache reads count. Claude's cache reads can be 10–100× its input + output, so including them makes the number huge and dominated by cache. Proposal: headline = input + output + cache writes, with a Settings toggle to include cache reads.
+  - **All token types count**, cache reads included: they're real usage, just billed at a different rate. Raw token totals are dominated by cache reads, though, so the month-over-month comparison uses **estimated API-equivalent cost**, which weights each token type by its price. Each row shows tokens and estimated $; the ▲/▼ is computed on cost.
+  - **Pricing table:** a bundled, versioned per-model price list (input, output, cache write, cache read). pi already records `cost` per message; use it directly. For Claude and Codex subscriptions this is "what it would have cost on the API", not a bill, and the UI labels it as an estimate.
 - **History:** Claude Code deletes transcripts after 30 days by default (`cleanupPeriodDays`). The Ledger must keep its own copy so last month's numbers survive. On first run, import everything still on disk; for the first month the comparison may be partial, and the UI says so.
 - **Plan-limit bars** (5h / weekly) are captured in the Ledger, but they appear in the dropdown only as a later option.
 - **Metrics window (later):**
