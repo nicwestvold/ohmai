@@ -34,7 +34,9 @@ For each agent's hooks and data formats, see [agent-integrations.md](agent-integ
 - **Updates:** in-app via Sparkle 2, using the signed (EdDSA) appcast that Sparkle requires. This is the **one** network call:
   - it fetches only the appcast
   - Sparkle's system-profile reporting is off, so nothing about the Mac or usage is sent
-  - "Check for updates automatically" is a toggle in Settings
+  - automatic checks are **on by default** (`SUEnableAutomaticChecks = true`), with a Settings toggle to turn them off
+  - two feeds: a stable appcast, and a separate preview feed for beta builds (the same pattern Rex uses)
+  - privacy promise wording: "The only network request ohmai makes is checking its update feed, and you can turn that off."
 - **Testing:**
   - The `Policy` and lease logic get pure unit tests.
   - Each adapter is tested against fixture files built from real session files, with message content replaced. When an agent update changes its format, it should show up as a failing test, not as wrong numbers.
