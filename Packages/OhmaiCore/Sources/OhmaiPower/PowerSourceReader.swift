@@ -3,8 +3,8 @@ import IOKit.ps
 import OhmaiCore
 
 /// Reads the current power source from IOKit.
-enum PowerSourceReader {
-    static func current() -> PowerSource {
+public enum PowerSourceReader {
+    public static func current() -> PowerSource {
         guard let blob = IOPSCopyPowerSourcesInfo()?.takeRetainedValue() else { return .unknown }
         let providing = IOPSGetProvidingPowerSourceType(blob)?.takeUnretainedValue() as String?
         let list = IOPSCopyPowerSourcesList(blob)?.takeRetainedValue() as? [CFTypeRef] ?? []

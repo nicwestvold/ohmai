@@ -172,14 +172,20 @@ Power assertions don't stop the sleep that happens when you close the lid (unles
 
 ```swift
 @objc protocol LidHelperProtocol {
-    func engage(leaseSeconds: Int, reply: @escaping (Bool, String?) -> Void)  // disablesleep 1
-    func renew(leaseSeconds: Int, reply: @escaping (Bool) -> Void)
-    func release(reply: @escaping (Bool) -> Void)                             // disablesleep 0
+    func engage(leaseSeconds: Int, batteryFloorPercent: Int, reply: @escaping (Bool, String?) -> Void)  // disablesleep 1
+    func renew(leaseSeconds: Int, batteryFloorPercent: Int, reply: @escaping (Bool) -> Void)
+    func release(reply: @escaping (Bool) -> Void)                                                       // disablesleep 0
     func status(reply: @escaping (_ engaged: Bool, _ expiresAt: Date?) -> Void)
+    func version(reply: @escaping (String) -> Void)  // CFBundleVersion, to spot a stale helper after an update
 }
 ```
 
-**Caller check:** the helper accepts connections only from ohmai, matched by code-signing requirement (team ID + bundle ID), using `NSXPCConnection.setCodeSigningRequirement`.
+- **The helper clamps its inputs:** leases to 1–300s, and the battery floor to 10–100%. A buggy app can't ask for a day-long lease or a 0% floor.
+- Engaging while engaged renews. `renew` never engages.
+- The app passes the lid-closed floor from Settings, so the helper and the policy agree on it.
+
+**Caller check:** the helper accepts connections only from ohmai, matched by code-signing requirement (team ID + bundle ID), using `NSXPCConnection.setCodeSigningRequirement`. The app checks the helper the same way.
+- The team ID comes from the helper's embedded Info.plist (`OHMAI_TEAM_ID`). If it's missing or malformed, the helper resets sleep and exits: it fails closed.
 
 **It only ever runs** `pmset -a disablesleep 0|1`. It takes no arbitrary commands.
 
@@ -189,10 +195,28 @@ The helper, not the app, guarantees the setting is turned back off:
 
 - **Lease:** the app renews every 30s with a 90s lease. If the lease expires (app crashed, hung or quit), the helper sets `disablesleep 0` itself.
 - **Startup reset:** on launch the helper always sets `disablesleep 0`, in case a crash or reboot left it on.
+  - The launchd plist has `RunAtLoad` (so the reset runs at boot even if ohmai never opens) and `KeepAlive` on unsuccessful exit (so a crash respawns it, and the reset runs again).
+- **Signals:** on `SIGTERM` (unregister, shutdown, logout) the helper sets `disablesleep 0` before exiting.
+- **Failed reset:** if `pmset` fails while turning sleep back on, the helper retries every 5s until it succeeds.
 - **Battery and thermal:** the helper checks these itself and releases if:
   - it's on battery below the lid-closed floor (default 30%), or
   - thermal state is `.serious` or worse.
 - **Lid-closed sessions pause idle sleep only while agents are busy.** When the last lease ends, release happens immediately, so a closed laptop goes to sleep as normal.
+- **Ticking:** the helper checks expiry and guards every 5s, only while engaged (or while a reset is pending). When idle it runs no timers.
+- The menu bar shows Shades only once the helper has actually engaged, not merely when the policy wants it to.
+
+### Testing lid-closed mode by hand
+
+Unit tests fake `pmset` and never change real power state. To try the real helper:
+
+1. Before you start, check the state, and keep the restore command ready:
+   ```sh
+   pmset -g | grep -i sleepdisabled      # expect absent or 0
+   sudo pmset -a disablesleep 0          # restore, if anything goes wrong
+   ```
+2. Build, and launch ohmai from `build/Build/Products/Debug`. Enable lid-closed mode in Settings and approve the helper in System Settings → Login Items.
+3. Check the helper: `sudo launchctl print system/com.westvold.ohmai.lidhelper`, and its log: `log stream --predicate 'subsystem == "com.westvold.ohmai.lidhelper"'`.
+4. Dead-man check: with it engaged, `kill -9` the ohmai app. `SleepDisabled` must return to 0 within 90s.
 
 ### Lid-closed conditions (policy rule 4)
 

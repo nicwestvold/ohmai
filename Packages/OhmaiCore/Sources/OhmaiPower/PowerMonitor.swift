@@ -52,7 +52,7 @@ public final class PowerMonitor {
 }
 
 extension ThermalState {
-    init(_ state: ProcessInfo.ThermalState) {
+    public init(_ state: ProcessInfo.ThermalState) {
         switch state {
         case .nominal: self = .nominal
         case .fair: self = .fair
