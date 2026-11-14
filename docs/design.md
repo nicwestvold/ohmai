@@ -8,7 +8,13 @@ For each agent's hooks and data formats, see [agent-integrations.md](agent-integ
 
 ## Menu bar UI
 
-The **menu bar icon** must answer "is an agent running?" at a glance, without opening the dropdown. Idle and working must differ in *shape*, not just fill or a subtle tint, and be legible at 16px on light and dark menu bars. Concepts: https://claude.ai/artifact/BoCobNp2RZPWWWiUc8gfnN. States:
+The **menu bar icon** must answer "is an agent running?" at a glance, without opening the dropdown. Idle and working must differ in *shape*, not just fill or a subtle tint, and be legible at 16px on light and dark menu bars. Concepts: https://claude.ai/artifact/BoCobNp2RZPWWWiUc8gfnN.
+
+**Chosen: the Ω face.** The ohm sign as a little character, because the app should have personality. Two levels of detail:
+- **Menu bar (16px):** four simple states: Asleep (outline, eyes shut), Working (solid, eyes open), Waiting (Working + dot badge), Shades (lid-closed mode).
+- **Dropdown header and app icon:** the full set of expressions: Asleep, Focused, Oh! (waiting), Shades (lid-closed), Drowsy (low battery, letting the Mac sleep), Dizzy (rate limit hit), Happy (all agents just finished, shown briefly).
+
+The generic state list below still applies:
 - outline: no agents running
 - filled: agent(s) busy
 - dot badge: an agent is waiting on you
