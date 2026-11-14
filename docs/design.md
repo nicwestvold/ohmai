@@ -103,7 +103,7 @@ The **dropdown** shows what's running and the month's token usage. Keep-awake co
 ```
 
 **Parts:**
-- **App:** SwiftUI `MenuBarExtra`, `LSUIElement` (menu bar only, no Dock icon), macOS 14+.
+- **App:** SwiftUI `MenuBarExtra`, `LSUIElement` (menu bar only, no Dock icon), macOS 26+.
 - **Ingest:** a localhost HTTP listener for Claude `http` hooks, plus an `ohmai` CLI for `command` hooks, the statusline tee and the pi extension. Everything converges on a single event type.
 - **Watchers:** FSEvents over the transcript and rollout directories. Imports are incremental: store a byte offset per file and never re-read from the start.
 - **Distribution:** built for personal use first, possibly open-sourced later. It can't use the App Store sandbox, because it reads `~/.claude`, `~/.codex` and `~/.pi`.
@@ -125,7 +125,7 @@ The **dropdown** shows what's running and the month's token usage. Keep-awake co
 ## Power policy
 
 ```swift
-func decide(leases: [Lease], power: PowerState, prefs: Prefs) -> Decision
+func decide(leases: [Lease], power: PowerState, prefs: Prefs, now: Date) -> Decision
 // Decision: .allowSleep(reason) | .stayAwake(reason) | .stayAwakeLidClosed(reason)
 ```
 
@@ -144,7 +144,12 @@ func decide(leases: [Lease], power: PowerState, prefs: Prefs) -> Decision
 | 4 | Lid-closed mode enabled and its own conditions met (below) | Stay awake, lid closed |
 | 5 | Otherwise | Stay awake (idle-sleep assertion) |
 
-The policy is pure and fully unit-tested. The menu bar always shows the current decision and its reason, e.g. "Awake: 2 agents · on AC".
+The policy is pure and fully unit-tested. `now` is an input, not a clock read, so lease expiry (signal timeout, waiting cap) is decided inside the policy and a caller can't forget to drop expired leases.
+
+**Edge cases:**
+- Battery floors are "below" in the strict sense: exactly at the floor counts as OK, for both the general floor and the lid-closed floor.
+- An unreadable charge, or an unknown power source, counts as below the floor. When in doubt, release.
+- A thermal state macOS adds in the future is treated as `.critical`. The menu bar always shows the current decision and its reason, e.g. "Awake: 2 agents · on AC".
 
 **Idle-sleep assertion:** `IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleSystemSleep, …)` with the reason `"ohmai: <n> agent session(s) active"`. Optionally, `PreventUserIdleDisplaySleep` keeps the screen on too.
 
@@ -192,7 +197,7 @@ The helper, not the app, guarantees the setting is turned back off:
 All of the following must hold:
 - Lid-closed mode is enabled and the helper is approved
 - At least one `busy` lease. A lease that is only `waiting` never keeps a closed lid awake.
-- On AC, or on battery above the lid-closed floor
+- On AC, or on battery at or above the lid-closed floor
 - Thermal state is nominal or fair
 
 ## Usage and metrics
