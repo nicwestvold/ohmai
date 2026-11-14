@@ -1,0 +1,29 @@
+// Settings shared by every configuration. Override any of them (notably OHMAI_TEAM_ID)
+// in Config/Local.xcconfig, which is gitignored. See Local.xcconfig.example.
+
+// Identity
+OHMAI_TEAM_ID = 9UT6FTF6V6
+DEVELOPMENT_TEAM = $(OHMAI_TEAM_ID)
+PRODUCT_BUNDLE_IDENTIFIER = com.westvold.ohmai
+
+// Versions. CURRENT_PROJECT_VERSION is the build number Sparkle compares:
+// monotonically increasing, never reused or decreased (bump with `agvtool next-version -all`).
+MARKETING_VERSION = 0.1.0
+CURRENT_PROJECT_VERSION = 1
+VERSIONING_SYSTEM = apple-generic
+
+// Platform and language
+MACOSX_DEPLOYMENT_TARGET = 26.0
+SWIFT_VERSION = 6.0
+SWIFT_STRICT_CONCURRENCY = complete
+
+// Signing: not sandboxed (reads ~/.claude, ~/.codex, ~/.pi), hardened runtime on.
+CODE_SIGN_STYLE = Manual
+ENABLE_HARDENED_RUNTIME = YES
+ENABLE_APP_SANDBOX = NO
+
+// Updates: YES selects SparkleUpdater, NO the NoopUpdater (see docs/updates.md).
+OHMAI_UPDATES_ENABLED = NO
+OHMAI_UPDATES_CONDITION_YES = OHMAI_UPDATES_ENABLED
+OHMAI_UPDATES_CONDITION_NO =
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(OHMAI_UPDATES_CONDITION_$(OHMAI_UPDATES_ENABLED))

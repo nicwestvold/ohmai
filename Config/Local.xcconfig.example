@@ -1,0 +1,6 @@
+// Copy to Config/Local.xcconfig (gitignored) to build with your own Apple team.
+// The lid helper's XPC caller check is built from OHMAI_TEAM_ID, so it must match
+// the team that signs the app.
+
+OHMAI_TEAM_ID = YOURTEAMID
+// PRODUCT_BUNDLE_IDENTIFIER = com.example.ohmai

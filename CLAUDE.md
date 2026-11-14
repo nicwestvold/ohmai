@@ -75,6 +75,18 @@ Main components:
 ### Version numbers
 `CFBundleVersion` is a monotonically increasing build number (Sparkle depends on it). Never reuse or decrease it.
 
+## Layout and build
+
+| Path | What |
+|---|---|
+| `Packages/OhmaiCore` | Local Swift package. `OhmaiCore`: domain types, leases and `Policy`, Foundation only, no I/O. `OhmaiPower`: `PowerMonitor`, `AssertionManager` (IOKit). |
+| `App/` | The app target: composition root, `AppModel`, SwiftUI views, the `Updater` seam |
+| `Config/*.xcconfig` | Signing, versions, `OHMAI_TEAM_ID`, `OHMAI_UPDATES_ENABLED`. Per-developer overrides go in `Config/Local.xcconfig` (gitignored). |
+| `project.yml` | XcodeGen spec. `ohmai.xcodeproj` is generated, not committed. |
+
+- `make test` runs the package tests (`swift test`); it's fast and needs no Xcode project.
+- `make project` regenerates the Xcode project; `make build` builds the app.
+
 ## Testing
 
 - `Policy` and lease logic: exhaustive unit tests, including battery thresholds, thermal state, waiting-lease cap and lid conditions.

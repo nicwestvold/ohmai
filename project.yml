@@ -1,0 +1,42 @@
+# XcodeGen spec. Generate the project with `make project` (ohmai.xcodeproj is not committed).
+name: ohmai
+options:
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+
+configFiles:
+  Debug: Config/Debug.xcconfig
+  Release: Config/Release.xcconfig
+
+packages:
+  OhmaiCore:
+    path: Packages/OhmaiCore
+
+targets:
+  ohmai:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+    settings:
+      base:
+        INFOPLIST_FILE: App/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        PRODUCT_NAME: ohmai
+    dependencies:
+      - package: OhmaiCore
+        product: OhmaiCore
+      - package: OhmaiCore
+        product: OhmaiPower
+
+schemes:
+  ohmai:
+    build:
+      targets:
+        ohmai: all
+    test:
+      targets:
+        - package: OhmaiCore/OhmaiCoreTests
+        - package: OhmaiCore/OhmaiPowerTests

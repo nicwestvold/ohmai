@@ -1,0 +1,6 @@
+#include "Shared.xcconfig"
+
+CODE_SIGN_IDENTITY = Developer ID Application
+OTHER_CODE_SIGN_FLAGS = --timestamp
+
+#include? "Local.xcconfig"
