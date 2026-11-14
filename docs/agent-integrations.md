@@ -41,7 +41,7 @@ Items marked **(unverified)** still need a hands-on check before an adapter depe
 
 | Agent | Activity source | Usage source |
 |---|---|---|
-| Claude Code | ohmai plugin with `http` hooks | Transcripts, plus a statusline tee wrapper for limits |
+| Claude Code | Watch `~/.claude/sessions/<pid>.json` (busy / idle / waiting); ohmai plugin hooks as a cross-check | Transcripts, plus a statusline tee wrapper for limits |
 | Codex | Watch rollout files (no setup needed); optional hooks for "waiting on approval" | Rollout files |
 | pi | ohmai extension | Session files |
 
@@ -354,10 +354,61 @@ Both are **(unverified)**.
 
 ---
 
+## Hands-on checks (2026-11-14)
+
+### Claude Code 2.1.325: the sessions file is a real busy/idle source
+
+The code that writes `~/.claude/sessions/<pid>.json` computes `status` like this (read from the shipped binary):
+
+```js
+function YEe(h){
+  let P = R1o(h);                       // waiting reason, if any
+  if (P !== void 0) return {status:"waiting", waitingFor:P, working:false};
+  return {status: h.isLoading || h.delegatedActive ? "busy" : "idle", waitingFor:void 0, working:h.isQueryActive};
+}
+// R1o returns: "input needed" | <dialog's waitingFor> | "worker request" | "sandbox request" | "dialog open"
+```
+
+- **The status values are `busy`, `idle` and `waiting`**, with `waitingFor` giving the reason. An interrupt clears `isLoading`, so Esc should flip it to `idle`. This closes the Esc gap without any hooks.
+- **`busy` includes background work** (`delegatedActive`). For example, a session sat at `busy` for 3+ hours while its transcript showed `pendingBackgroundAgentCount: 2`. That's correct for keep-awake.
+- **`statusUpdatedAt` changes only when the status changes**, and `updatedAt` on every write. So staleness must be judged from pid liveness and transcript writes, not from `statusUpdatedAt`.
+- **It's undocumented and could change in any release.** Use it as the primary activity source, with hooks as a cross-check and a fallback if the file disappears.
+- **Interrupt markers in transcripts:** `[Request interrupted by user]` and `[Request interrupted by user for tool use]`. `system` entries with `subtype: "turn_duration"` mark ends of turns and carry `pendingBackgroundAgentCount`.
+- Still unverified: whether `Notification(idle_prompt)` fires after an interrupt. It's no longer needed.
+
+### Codex 0.169.0: hooks work, but untrusted hooks silently don't run
+
+The test ran `codex exec` with inline `-c hooks.<Event>=[…]` command hooks:
+- **Without trust:** no hooks ran, with no warning or error. The turn completed normally.
+- **With `--dangerously-bypass-hook-trust`:** `SessionStart`, `UserPromptSubmit`, `PreModelRequest`, `Stop` and `SessionEnd` all fired, in that order, with these payload fields:
+
+| Event | Fields |
+|---|---|
+| `SessionStart` | cwd, hook_event_name, model, permission_mode, session_id, source, transcript_path |
+| `UserPromptSubmit` | + prompt, turn_id |
+| `PreModelRequest` | cwd, hook_event_name, model, session_id, transcript_path, turn_id |
+| `Stop` | + last_assistant_message, stop_hook_active, turn_id |
+| `SessionEnd` | cwd, hook_event_name, reason, session_id, transcript_path |
+
+What this means for ohmai:
+- Hooks must be installed in `~/.codex/hooks.json` and approved once in the Codex TUI (from source: a startup review screen and a hooks browser; the screen itself hasn't been seen).
+- ohmai can't tell from outside whether they've been approved, so Settings should show **"seen a Codex hook event recently: yes/no"** rather than assume.
+- **Rollout watching stays the primary source**, because it works with zero approval.
+- Gotcha: `codex exec` waits for stdin when it isn't a TTY. Use `</dev/null` when scripting it.
+
+### pi 1.5.2 (installed, no provider connected)
+
+- **Install:** `~/.local/bin/pi` → `~/.pi/agent/bin/pi` (a shell script launcher).
+- **Data:** `~/.pi/agent/{auth.json, settings.json, models-store.json, sessions/}`.
+- **Session path format is confirmed:** `~/.pi/agent/sessions/--Users-example-projects-demo--/<ISO-timestamp>_<uuid>.jsonl`.
+- **Session files are written lazily.** The directory and file path exist at `session_start`, but no file appears until the first message. An empty session dir is normal.
+- **The extension API works as documented.** Loading a test extension with `-e` showed:
+  - the factory runs first, then `session_start` (`ctx.isIdle()` = true, `getSessionFile()` returns the path), then `session_shutdown` on stdin EOF
+  - the extension's `.ts` loaded with no build step
+- **Process name:** `pgrep -x pi-rpc` matched the RPC process, so `process.title` is visible to macOS process lookups. Interactive sessions should match `pgrep -x pi`, but that hasn't been seen yet.
+- **Not yet testable:** `agent_start` / `agent_settled`, the `usage` schema in real messages, and the rate-limit headers from `after_provider_response`. All need a connected provider.
+
 ## Open questions
 
-- [ ] Claude: does `~/.claude/sessions/<pid>.json` `status` flip to an idle value after Esc?
-- [ ] Claude: does `Notification(idle_prompt)` fire after an interrupt?
-- [ ] Codex: what does the hook trust approval look like in 0.169? Does `Stop` fire on turns that end in an error?
-- [ ] Codex: can a passive app-server client observe TUI threads?
-- [ ] pi: install it, confirm the session schema against real files, and check which rate-limit headers come through `after_provider_response`.
+- [ ] Codex: does `Stop` fire on turns that end in an error? Can a passive app-server client observe TUI threads?
+- [ ] pi: once a provider is connected, check agent events, the message `usage` schema, and rate-limit headers.
