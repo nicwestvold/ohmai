@@ -31,7 +31,7 @@ For each agent's hooks and data formats, see [agent-integrations.md](agent-integ
   - It makes **no network calls** except the update check (below).
   - Promise this in the README, and keep it true in the code: a single module owns transcript parsing and returns only usage records.
 - **Pricing:** a per-model price table bundled with the app and updated with releases. Nothing is fetched.
-- **Updates:** in-app via Sparkle 2, using the signed (EdDSA) appcast that Sparkle requires. This is the **one** network call:
+- **Updates:** see [updates.md](updates.md). Prepared behind an `Updater` seam with a no-op implementation; Sparkle gets wired when a feed exists. In-app via Sparkle 2, using the signed (EdDSA) appcast that Sparkle requires. This is the **one** network call:
   - it fetches only the appcast
   - Sparkle's system-profile reporting is off, so nothing about the Mac or usage is sent
   - automatic checks are **on by default** (`SUEnableAutomaticChecks = true`), with a Settings toggle to turn them off
@@ -232,5 +232,5 @@ ohmai's Settings → Integrations page installs and checks each one:
 3. Claude adapter (hooks + liveness), so keep-awake works end to end
 4. Codex adapter (rollout watcher), pi adapter (extension)
 5. Ledger + incremental import, month-to-date vs. last month in the dropdown
-6. Launch at login, Sparkle updates, release pipeline (sign, notarize, appcast)
+6. Launch at login, release pipeline (sign, notarize), Sparkle wiring per updates.md (the `Updater` seam goes in at step 1)
 7. Later: statusline tee for limits + Dizzy, metrics window, notifications
