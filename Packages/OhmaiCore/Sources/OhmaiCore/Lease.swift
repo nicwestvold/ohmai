@@ -85,6 +85,12 @@ public struct LeaseBook: Sendable, Equatable {
         }
     }
 
+    /// When the earliest lease expires, or nil if there are none. The app sleeps until then
+    /// instead of polling.
+    public func nextExpiry(prefs: Prefs) -> Date? {
+        leasesBySession.values.map { $0.expiresAt(prefs: prefs) }.min()
+    }
+
     /// Removes expired leases and returns them.
     @discardableResult
     public mutating func prune(at now: Date, prefs: Prefs) -> [Lease] {

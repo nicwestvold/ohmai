@@ -134,4 +134,29 @@ struct LeaseBookTests {
         book.apply(event(.busy, "b", at: t0.plus(minutes: 1)), now: t0.plus(minutes: 2))
         #expect(book.leases.map(\.session.sessionId) == ["a", "b", "c"])
     }
+
+    @Test func nextExpiryIsNilWithNoLeases() {
+        #expect(LeaseBook().nextExpiry(prefs: .default) == nil)
+    }
+
+    @Test func nextExpiryIsTheEarliestLease() {
+        var book = LeaseBook()
+        book.apply(event(.busy, "late", at: t0.plus(minutes: 5)), now: t0.plus(minutes: 5))
+        book.apply(event(.busy, "early", at: t0), now: t0.plus(minutes: 5))
+        #expect(book.nextExpiry(prefs: .default) == t0.plus(minutes: 10))
+    }
+
+    @Test func nextExpiryHonoursWaitingCap() {
+        var book = LeaseBook()
+        book.apply(event(.waiting, at: t0), now: t0)
+        book.apply(event(.waiting, at: t0.plus(minutes: 55)), now: t0.plus(minutes: 55))
+        #expect(book.nextExpiry(prefs: .default) == t0.plus(minutes: 60))
+    }
+
+    @Test func nextExpiryIsNilAfterRelease() {
+        var book = LeaseBook()
+        book.apply(event(.busy, at: t0), now: t0)
+        book.apply(event(.idle, at: t0.plus(minutes: 1)), now: t0.plus(minutes: 1))
+        #expect(book.nextExpiry(prefs: .default) == nil)
+    }
 }

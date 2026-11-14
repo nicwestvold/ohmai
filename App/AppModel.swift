@@ -25,10 +25,13 @@ final class AppModel {
     private(set) var assertionError: AssertionError?
 
     @ObservationIgnored private let assertions: AssertionManager
-    @ObservationIgnored private var ticker: Task<Void, Never>?
+    /// Wakes the app when the earliest lease expires. Nil when there are no leases, so an
+    /// idle ohmai schedules no timers at all.
+    @ObservationIgnored private var expiryTimer: Task<Void, Never>?
+    @ObservationIgnored private var scheduledExpiry: Date?
 
-    /// How often leases are re-checked for expiry, independent of incoming events.
-    private static let tickInterval: Duration = .seconds(15)
+    /// How late an expiry check may fire, so the system can coalesce the wakeup.
+    private static let expiryTolerance: Duration = .seconds(2)
 
     init(
         updater: any Updater,
@@ -48,11 +51,11 @@ final class AppModel {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.assertions.releaseAll() }
         }
-        ticker = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: Self.tickInterval)
-                self?.reevaluate()
-            }
+        // After sleep, re-check at once rather than trusting a timer scheduled before it.
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.reevaluate() }
         }
         reevaluate()
     }
@@ -84,5 +87,24 @@ final class AppModel {
         if next != decision { decision = next }
         assertions.apply(decision, keepDisplayAwake: prefs.keepDisplayAwake)
         assertionError = assertions.lastError
+        scheduleExpiryCheck(at: leaseBook.nextExpiry(prefs: prefs), now: now)
+    }
+
+    private func scheduleExpiryCheck(at expiry: Date?, now: Date) {
+        guard expiry != scheduledExpiry else { return }
+        expiryTimer?.cancel()
+        scheduledExpiry = expiry
+        guard let expiry else {
+            expiryTimer = nil
+            return
+        }
+        let delay = Duration.seconds(max(0, expiry.timeIntervalSince(now)))
+        expiryTimer = Task { [weak self] in
+            // ContinuousClock keeps counting while the Mac sleeps.
+            try? await Task.sleep(for: delay, tolerance: Self.expiryTolerance, clock: .continuous)
+            guard !Task.isCancelled, let self else { return }
+            self.scheduledExpiry = nil
+            self.reevaluate()
+        }
     }
 }
