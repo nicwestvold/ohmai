@@ -109,6 +109,11 @@ step "Packaging"
 ditto -c -k --keepParent "$APP" "build/release/${NAME}.zip"
 shasum -a 256 "build/release/${NAME}.zip" | tee "build/release/${NAME}.zip.sha256"
 
+# Keep the zip and dSYMs; remove the loose app copies. Extra copies with the same bundle ID
+# confuse macOS's background-item records (the lid helper's approval can't stick).
+mv "$OUT/ohmai.xcarchive/dSYMs" "$OUT/dSYMs"
+rm -rf "$OUT/ohmai.xcarchive" "$OUT/export"
+
 cat <<EOF
 
 Done: build/release/${NAME}.zip

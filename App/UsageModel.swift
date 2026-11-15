@@ -76,7 +76,10 @@ final class UsageModel {
         if let path = ProcessInfo.processInfo.environment["OHMAI_LEDGER_DB"] {
             return URL(fileURLWithPath: path)
         }
-        #endif
+        // Debug builds keep their own ledger, so they never write the installed app's history.
+        return UsageImporter.defaultDatabase.deletingLastPathComponent().appending(path: "ledger-debug.sqlite")
+        #else
         return UsageImporter.defaultDatabase
+        #endif
     }
 }

@@ -36,6 +36,11 @@ final class LidHelperRegistration {
     /// `SMAppService` doesn't notify on approval, so the app calls this when it matters:
     /// at launch, when Settings or the dropdown opens, and after register/unregister.
     func refresh() {
+        #if DEBUG
+        // The helper only accepts the release app (bundle id com.westvold.ohmai), and a Debug
+        // registration would share its launchd label. Debug builds never register it.
+        let next: Status = .notFound
+        #else
         let next: Status = switch service.status {
         case .notRegistered: .notRegistered
         case .requiresApproval: .requiresApproval
@@ -43,6 +48,7 @@ final class LidHelperRegistration {
         case .notFound: .notFound
         @unknown default: .unknown
         }
+        #endif
         if next != status {
             status = next
             onChange?()
@@ -50,6 +56,9 @@ final class LidHelperRegistration {
     }
 
     func register() {
+        #if DEBUG
+        lastError = "Lid-closed mode needs a release build."
+        #else
         do {
             try service.register()
             lastError = nil
@@ -58,6 +67,7 @@ final class LidHelperRegistration {
             lastError = service.status == .requiresApproval ? nil : error.localizedDescription
         }
         refresh()
+        #endif
     }
 
     func unregister() async {

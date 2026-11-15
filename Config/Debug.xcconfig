@@ -2,5 +2,9 @@
 
 CODE_SIGN_IDENTITY = Apple Development
 OHMAI_CONFIG_CONDITIONS = DEBUG
+// Debug builds are a separate app to macOS: own preferences, own background-item records,
+// so a build in build/ never collides with the installed release (it did: the lid helper's
+// approval kept flipping between the two copies).
+PRODUCT_BUNDLE_IDENTIFIER = com.westvold.ohmai.debug
 
 #include? "Local.xcconfig"

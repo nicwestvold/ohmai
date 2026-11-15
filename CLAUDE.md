@@ -93,6 +93,7 @@ Main components:
 
 - `make test` runs the package tests (`swift test`); it's fast and needs no Xcode project.
 - `make project` regenerates the Xcode project; `make build` builds the app.
+- Debug builds are `com.westvold.ohmai.debug`: own preferences, own `ledger-debug.sqlite`, and no lid helper (release-only). Never run two builds with the same bundle ID at once: macOS's background-item record for the helper flips between them and its approval won't stick.
 - Debug builds read `OHMAI_CLAUDE_SESSIONS_DIR`, `OHMAI_CODEX_SESSIONS_DIR` and `OHMAI_PI_STATUS_DIR` to point the adapters at scratch directories, for manual testing without touching real agent data. `OHMAI_SNAPSHOT_DIR` renders the dropdown and Settings tabs to PNG (light and dark) and quits. `OHMAI_LEDGER_DB` points the usage ledger at a scratch database.
 - Try the pi extension without installing it: `pi -p --no-session -e Packages/OhmaiCore/Sources/OhmaiPiAdapter/Resources/ohmai.ts "…"`.
 
