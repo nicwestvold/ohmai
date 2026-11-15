@@ -286,5 +286,6 @@ ohmai runs all day in the background, so it must cost nothing when idle and stay
 3. Claude adapter (sessions file + liveness + quiet limit), so keep-awake works end to end. No hooks plugin in v1: hooks are blind during a long tool call, the same as transcripts, and a plugin plus a localhost listener adds setup and a local attack surface for no extra coverage.
 4. Codex adapter (rollout watcher), pi adapter (extension)
 5. Ledger + incremental import, month-to-date vs. last month in the dropdown
-6. Launch at login, release pipeline (sign, notarize), Sparkle wiring per updates.md (the `Updater` seam goes in at step 1)
+6. Launch at login, release pipeline (sign, notarize, publish to the private repo). Done 2026-11-14.
 7. Later: statusline tee for limits + Dizzy, metrics window, notifications
+8. Back burner: **Sparkle in-app updates**. Wire `SparkleUpdater` behind the existing `Updater` seam per [updates.md](updates.md) (wiring checklist there). Needs a public feed, so it most likely comes with going open source. Adding it ends the "no network requests" promise, so update the README, Settings footer and `CLAUDE.md` in the same change.
