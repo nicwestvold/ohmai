@@ -28,6 +28,27 @@ public enum LidRefusal: Error, Equatable, CustomStringConvertible {
     }
 }
 
+/// Why sleep was turned back on. Logged, so a lease expiry can be told from a request.
+public enum LidReleaseReason: Equatable, Sendable, CustomStringConvertible {
+    case startup
+    case requested
+    case leaseExpired
+    case guardTripped(LidRefusal)
+    case shutdown
+    case retry
+
+    public var description: String {
+        switch self {
+        case .startup: "startup reset"
+        case .requested: "app requested release"
+        case .leaseExpired: "lease expired (app stopped renewing)"
+        case .guardTripped(let r): "guard: \(r.description)"
+        case .shutdown: "helper shutting down"
+        case .retry: "retrying failed reset"
+        }
+    }
+}
+
 /// The dead-man switch. The app asks; this decides, and it defaults to sleep being allowed.
 ///
 /// - `start()` always resets `disablesleep` to 0.
@@ -40,6 +61,7 @@ public final class LidController {
     public private(set) var expiresAt: Date?
     /// Turning sleep back on failed and must be retried.
     public private(set) var resetPending = false
+    public private(set) var lastReleaseReason: LidReleaseReason?
 
     private var floor = 30
     private let sleep: any SleepSetting
@@ -54,21 +76,21 @@ public final class LidController {
     public var needsTicking: Bool { isEngaged || resetPending }
 
     public func start() {
-        reset()
+        reset(.startup)
     }
 
     /// Engages, or renews if already engaged. Returns nil on success.
     public func engage(leaseSeconds: Int, batteryFloorPercent: Int, now: Date) -> LidRefusal? {
         floor = batteryFloorPercent.clamped(to: LidHelperXPC.batteryFloorRange)
         if let refusal = guardRefusal() {
-            if isEngaged || resetPending { reset() }
+            if isEngaged || resetPending { reset(.guardTripped(refusal)) }
             return refusal
         }
         if !isEngaged {
             do {
                 try sleep.setSleepDisabled(true)
             } catch {
-                reset()  // the command may have half-applied
+                reset(.guardTripped(.sleepSettingFailed))  // the command may have half-applied
                 return .sleepSettingFailed
             }
             isEngaged = true
@@ -85,24 +107,25 @@ public final class LidController {
 
     /// Returns whether sleep is confirmed back on.
     @discardableResult
-    public func release() -> Bool {
-        reset()
+    public func release(_ reason: LidReleaseReason = .requested) -> Bool {
+        reset(reason)
         return !resetPending
     }
 
     public func tick(now: Date) {
         if isEngaged {
             if let expiresAt, now >= expiresAt {
-                reset()
-            } else if guardRefusal() != nil {
-                reset()
+                reset(.leaseExpired)
+            } else if let refusal = guardRefusal() {
+                reset(.guardTripped(refusal))
             }
         } else if resetPending {
-            reset()
+            reset(.retry)
         }
     }
 
-    private func reset() {
+    private func reset(_ reason: LidReleaseReason) {
+        lastReleaseReason = reason
         isEngaged = false
         expiresAt = nil
         do {

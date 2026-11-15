@@ -25,7 +25,7 @@ public final class LidRuntime {
 
     /// Called on SIGTERM and on any fatal path: sleep must be back on before we go.
     public func shutdown() {
-        controller.release()
+        controller.release(.shutdown)
         log.notice("shutting down; released")
     }
 
@@ -33,7 +33,11 @@ public final class LidRuntime {
         let wasEngaged = controller.isEngaged
         let result = body(controller, .now)
         if wasEngaged != controller.isEngaged {
-            log.notice("engaged: \(self.controller.isEngaged)")
+            if controller.isEngaged {
+                log.notice("engaged until \(self.controller.expiresAt?.formatted(.iso8601) ?? "?", privacy: .public)")
+            } else {
+                log.notice("released: \(self.controller.lastReleaseReason?.description ?? "?", privacy: .public)")
+            }
         }
         updateTimer()
         return result

@@ -56,6 +56,7 @@ struct LidControllerTests {
         controller.tick(now: t0.addingTimeInterval(90))
         #expect(!controller.isEngaged)
         #expect(sleep.current == false)
+        #expect(controller.lastReleaseReason == .leaseExpired)
     }
 
     @Test func renewExtendsLease() {
@@ -76,6 +77,7 @@ struct LidControllerTests {
         #expect(controller.release())
         #expect(sleep.current == false)
         #expect(controller.expiresAt == nil)
+        #expect(controller.lastReleaseReason == .requested)
     }
 
     @Test(arguments: [(-5, 1), (0, 1), (90, 90), (300, 300), (86_400, 300)])
@@ -114,6 +116,7 @@ struct LidGuardTests {
         controller.tick(now: t0.addingTimeInterval(5))
         #expect(!controller.isEngaged)
         #expect(sleep.current == false)
+        #expect(controller.lastReleaseReason == .guardTripped(.thermal(.serious)))
     }
 
     @Test(arguments: [(29, false), (30, true), (100, true)])

@@ -215,8 +215,10 @@ Unit tests fake `pmset` and never change real power state. To try the real helpe
    sudo pmset -a disablesleep 0          # restore, if anything goes wrong
    ```
 2. Build, and launch ohmai from `build/Build/Products/Debug`. Enable lid-closed mode in Settings and approve the helper in System Settings → Login Items.
-3. Check the helper: `sudo launchctl print system/com.westvold.ohmai.lidhelper`, and its log: `log stream --predicate 'subsystem == "com.westvold.ohmai.lidhelper"'`.
-4. Dead-man check: with it engaged, `kill -9` the ohmai app. `SleepDisabled` must return to 0 within 90s.
+3. Check the helper: `sudo launchctl print system/com.westvold.ohmai.lidhelper`, and its log: `/usr/bin/log show --last 10m --predicate 'subsystem == "com.westvold.ohmai.lidhelper"'`. Use the full path: in zsh, plain `log` is a shell builtin. Each engage and release is logged, with the reason for the release.
+4. Dead-man check: with it engaged, `kill -9` the ohmai app (`pkill -9 -x ohmai`). `SleepDisabled` must return to 0 within about 95s of the app's last renewal (90s lease, plus up to one 5s tick).
+
+**Verified 2026-11-14** (Debug build, Apple Development signing): helper approved, startup reset logged, engaged with a busy Claude session on AC, and after `kill -9` of the app the helper released on its own.
 
 ### Lid-closed conditions (policy rule 4)
 
