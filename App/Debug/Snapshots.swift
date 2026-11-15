@@ -8,8 +8,11 @@ import SwiftUI
 enum Snapshots {
     static func runIfRequested(model: AppModel) {
         guard let dir = ProcessInfo.processInfo.environment["OHMAI_SNAPSHOT_DIR"] else { return }
-        // Let adapters deliver their first scan before rendering.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+        // Let adapters deliver their first scan and the usage import finish before rendering.
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            for _ in 0..<300 where model.usage.importing { try? await Task.sleep(for: .seconds(1)) }
+            await model.usage.refresh()
             let out = URL(fileURLWithPath: dir, isDirectory: true)
             try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
             let pages: [(String, AnyView)] = [

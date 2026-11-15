@@ -9,40 +9,40 @@ struct MenuContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-                .padding(.horizontal, 14)
-                .padding(.top, 12)
-                .padding(.bottom, 10)
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 12)
 
-            Divider().padding(.horizontal, 14)
-
-            running
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-
-            Divider().padding(.horizontal, 14)
-
-            UsageSection(usage: model.usage)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-
-            if !problems.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(problems, id: \.self) { problem in
-                        Label(problem, systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
-                            .foregroundStyle(.orange)
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.bottom, 10)
+            if !model.leaseBook.leases.isEmpty {
+                running
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 10)
             }
 
-            Divider().padding(.horizontal, 14)
+            Divider().padding(.horizontal, 16)
+
+            UsageSection(usage: model.usage)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+
+            if !problems.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(problems, id: \.self) { problem in
+                        Label(problem, systemImage: "exclamationmark.triangle.fill")
+                            .font(.callout)
+                            .foregroundStyle(Theme.waiting)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+            }
+
+            Divider().padding(.horizontal, 16)
 
             footer
                 .padding(6)
         }
-        .frame(width: 320)
+        .frame(width: 340)
         .onAppear {
             model.lidRegistration.refresh()
             Task { await model.usage.refresh() }
@@ -52,62 +52,61 @@ struct MenuContent: View {
     // MARK: - Header
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: 12) {
+            // The app icon's look: amber face on an ink tile.
             HeaderFaceView(face: model.headerFace)
-                .foregroundStyle(model.decision.keepsAwake ? Color.accentColor : .secondary)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(model.decision.headline)
-                    .font(.headline)
+                .foregroundStyle(Theme.amber)
+                .frame(width: 44, height: 44)
+                .background(Theme.ink, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(.white.opacity(0.08)))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.title3.weight(.semibold))
                 Text(subtitle)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
             }
+            Spacer(minLength: 0)
         }
     }
 
-    /// The decision's reason, plus power facts that aren't already in it.
+    /// What your agents are doing, in words.
+    private var title: String {
+        let leases = model.leaseBook.leases
+        let waiting = leases.filter { !$0.isBusy }.count
+        let busy = leases.count - waiting
+        switch (busy, waiting) {
+        case (0, 0): return "All quiet"
+        case (_, 0): return busy == 1 ? "1 agent working" : "\(busy) agents working"
+        case (0, _): return waiting == 1 ? "1 agent needs you" : "\(waiting) agents need you"
+        default: return "\(busy) working · \(waiting) need\(waiting == 1 ? "s" : "") you"
+        }
+    }
+
+    /// The power state, kept short.
     private var subtitle: String {
-        var parts: [String] = []
-        if let detail = model.decision.detail { parts.append(detail) }
         let source = switch model.power.source {
         case .ac: "on AC"
         case .battery(let p): p.map { "on battery \($0)%" } ?? "on battery"
-        case .unknown: "power source unknown"
+        case .unknown: "power unknown"
         }
-        if !parts.contains(where: { $0.contains(source) }) { parts.append(source) }
-        if model.power.thermal != .nominal, !parts.contains(where: { $0.contains("thermal") }) {
-            parts.append("thermal \(model.power.thermal)")
+        switch model.decision {
+        case .stayAwakeLidClosed: return "Awake with the lid closed · \(source)"
+        case .stayAwake: return "Keeping your Mac awake · \(source)"
+        case .allowSleep(.noLeases): return "Your Mac can sleep as usual"
+        case .allowSleep(.keepAwakeOff): return "Keep-awake is off"
+        case .allowSleep: return "Letting your Mac sleep: \(model.decision.detail ?? source)"
         }
-        if model.power.lowPowerMode, !parts.contains("Low Power Mode") { parts.append("Low Power Mode") }
-        return parts.joined(separator: " · ")
     }
 
     // MARK: - Running
 
     private var running: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Running")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-            runningRows
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    @ViewBuilder
-    private var runningRows: some View {
-        let leases = model.leaseBook.leases
-        if leases.isEmpty {
-            Text("No agents running")
-                .foregroundStyle(.secondary)
-        } else {
-            // Minute resolution: second-by-second counting is noise in a menu.
-            TimelineView(.everyMinute) { context in
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(leases, id: \.session) { lease in
-                        LeaseRow(lease: lease, now: context.date)
-                    }
+        // Minute resolution: second-by-second counting is noise in a menu.
+        TimelineView(.everyMinute) { context in
+            VStack(spacing: 2) {
+                ForEach(model.leaseBook.leases, id: \.session) { lease in
+                    LeaseRow(lease: lease, now: context.date)
                 }
             }
         }
@@ -157,34 +156,55 @@ struct MenuContent: View {
     }
 }
 
+/// One session: the project first (that's what you recognize), the agent beneath it.
 private struct LeaseRow: View {
     let lease: Lease
     let now: Date
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .center, spacing: 10) {
             Circle()
-                .fill(lease.isBusy ? Color.green : Color.orange)
-                .frame(width: 7, height: 7)
-            Text(lease.session.agent.displayName)
-                .fixedSize()
-            if let project = lease.project {
-                Text(URL(fileURLWithPath: project).lastPathComponent + "/")
-                    .foregroundStyle(.secondary)
+                .fill(lease.session.agent.color)
+                .frame(width: 8, height: 8)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(project)
+                    .fontWeight(.medium)
                     .lineLimit(1)
                     .truncationMode(.middle)
+                Text(lease.session.agent.displayName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
-            Text(status)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-                .fixedSize()
+            status
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 5)
+        .background {
+            if !lease.isBusy {
+                RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Theme.waiting.opacity(0.12))
+            }
         }
     }
 
-    private var status: String {
-        let state = lease.isBusy ? "busy" : "waiting on you"
-        return "\(state) · \(Self.compact(now.timeIntervalSince(lease.activitySince)))"
+    private var project: String {
+        lease.project.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "Unknown project"
+    }
+
+    @ViewBuilder
+    private var status: some View {
+        let elapsed = Self.compact(now.timeIntervalSince(lease.activitySince))
+        if lease.isBusy {
+            Text("working · \(elapsed)")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+        } else {
+            Label("needs you · \(elapsed)", systemImage: "hourglass")
+                .font(.callout.weight(.medium))
+                .foregroundStyle(Theme.waiting)
+                .monospacedDigit()
+        }
     }
 
     /// "now", "9m", "1h 5m".
