@@ -69,6 +69,7 @@ public actor UsageImporter {
                 importFile(url.path, format: source.format, into: &report)
             }
         }
+        releaseMemory()
         return report
     }
 
@@ -79,7 +80,14 @@ public actor UsageImporter {
             guard let source = sources.first(where: { path.hasPrefix($0.root.path) && $0.includes(path) }) else { continue }
             importFile(path, format: source.format, into: &report)
         }
+        releaseMemory()
         return report
+    }
+
+    /// Imports touch a lot of memory briefly; give it back so idle ohmai stays small.
+    private func releaseMemory() {
+        ledger.releaseMemory()
+        malloc_zone_pressure_relief(nil, 0)
     }
 
     public func comparison(today: Date = .now, prices: PriceTable = .bundled, calendar: Calendar = .current) -> MonthComparison {

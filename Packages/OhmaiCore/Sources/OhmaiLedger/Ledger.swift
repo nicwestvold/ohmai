@@ -147,6 +147,11 @@ final class Ledger {
         return Date(timeIntervalSince1970: sqlite3_column_double(stmt, 0))
     }
 
+    /// Returns SQLite's page cache to the system. Called after each import batch.
+    func releaseMemory() {
+        sqlite3_db_release_memory(db)
+    }
+
     func recordCount() throws -> Int { try scalarInt("SELECT COUNT(*) FROM usage_records") }
 
     // MARK: - SQLite plumbing
