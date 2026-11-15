@@ -102,6 +102,7 @@ final class AppModel {
         pi.start()
         usage.start()
         launchAtLogin.applyDefaultIfNeeded()
+        restoreLidHelperIfNeeded()
         reevaluate()
         #if DEBUG
         Snapshots.runIfRequested(model: self)
@@ -188,6 +189,14 @@ final class AppModel {
         assertionError = assertions.lastError
         lidSession.apply(decision, batteryFloorPercent: prefs.lidClosedBatteryFloorPercent)
         scheduleExpiryCheck(at: leaseBook.nextExpiry(prefs: prefs), now: now)
+    }
+
+    /// Replacing the app (a manual update) drops the helper's registration. If the user had
+    /// lid-closed mode on, they already consented: register again. If macOS wants approval,
+    /// the Lid Closed tab and dropdown say so (no System Settings window at launch).
+    private func restoreLidHelperIfNeeded() {
+        guard prefsStore.prefs.lidClosedModeEnabled, lidRegistration.status == .notRegistered else { return }
+        lidRegistration.register()
     }
 
     /// The Settings toggle. Enabling registers the helper (macOS then asks for approval);
