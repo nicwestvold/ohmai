@@ -1,4 +1,4 @@
-.PHONY: project build test clean release release-check
+.PHONY: project build test clean release release-check publish
 
 project:
 	xcodegen generate
@@ -19,3 +19,7 @@ release:
 # Same, without uploading to Apple: archive, Developer ID sign, verify.
 release-check:
 	scripts/release.sh --no-notarize
+
+# Attach the built zip to a GitHub release on the private repo (needs the build-N tag pushed).
+publish:
+	scripts/publish.sh
