@@ -10,6 +10,7 @@ let package = Package(
         .library(name: "OhmaiLidXPC", targets: ["OhmaiLidXPC"]),
         .library(name: "OhmaiLidHelperCore", targets: ["OhmaiLidHelperCore"]),
         .library(name: "OhmaiClaudeAdapter", targets: ["OhmaiClaudeAdapter"]),
+        .library(name: "OhmaiCodexAdapter", targets: ["OhmaiCodexAdapter"]),
     ],
     targets: [
         // Domain types, leases and the pure `Policy`. Foundation only: no I/O.
@@ -26,12 +27,19 @@ let package = Package(
         .target(name: "OhmaiAdapterSupport"),
         // Claude Code: `~/.claude/sessions/<pid>.json` (undocumented) plus pid liveness.
         .target(name: "OhmaiClaudeAdapter", dependencies: ["OhmaiCore", "OhmaiAdapterSupport"]),
+        // Codex: rollout files (undocumented); turn boundaries from line prefixes only.
+        .target(name: "OhmaiCodexAdapter", dependencies: ["OhmaiCore", "OhmaiAdapterSupport"]),
         .testTarget(name: "OhmaiCoreTests", dependencies: ["OhmaiCore"]),
         .testTarget(name: "OhmaiPowerTests", dependencies: ["OhmaiPower", "OhmaiPowerSource"]),
         .testTarget(name: "OhmaiLidHelperCoreTests", dependencies: ["OhmaiLidHelperCore"]),
         .testTarget(
             name: "OhmaiClaudeAdapterTests",
             dependencies: ["OhmaiClaudeAdapter", "OhmaiAdapterSupport"],
+            resources: [.copy("Fixtures")]
+        ),
+        .testTarget(
+            name: "OhmaiCodexAdapterTests",
+            dependencies: ["OhmaiCodexAdapter", "OhmaiAdapterSupport"],
             resources: [.copy("Fixtures")]
         ),
     ]

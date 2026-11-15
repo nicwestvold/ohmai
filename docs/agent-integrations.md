@@ -401,6 +401,14 @@ What this means for ohmai:
 - **Rollout watching stays the primary source**, because it works with zero approval.
 - Gotcha: `codex exec` waits for stdin when it isn't a TTY. Use `</dev/null` when scripting it.
 
+### Codex 0.169.0: rollout layout, for the adapter
+
+- **Fixed key order on every line:** `{"timestamp":…,"ordinal":N,"type":"…","payload":{"type":"…"`. The adapter classifies lines from their first 256 bytes and never decodes anything but `session_meta` (for `id` and `cwd`). Message content is never decoded. If the order changes, lines stop matching, no turns are seen and the Mac is allowed to sleep; the fixture tests flag it.
+- **Turns:** `task_started` opens and `task_complete` / `turn_aborted` closes. Turn payloads carry `turn_id` and `root_turn_id`; the adapter only counts open turns.
+- **No pid in the rollout.** Liveness is found by looking for a process named `codex` with the rollout open (libproc). If no `codex` runs at all, any open turn is dead. If one runs but doesn't hold the file, liveness is unknown and the quiet limit decides. **Unverified:** whether the real `codex` keeps its rollout open between writes; if it doesn't, the "unknown" path applies.
+- **Approval waits aren't persisted**, so a Codex turn waiting on approval looks busy. The quiet limit bounds it. Optional Codex hooks (`PermissionRequest`) could mark it waiting later.
+- Older rollouts (2025) are `.json`, not `.jsonl`, and are ignored for activity.
+
 ### pi 1.5.2 (installed, no provider connected)
 
 - **Install:** `~/.local/bin/pi` → `~/.pi/agent/bin/pi` (a shell script launcher).
