@@ -32,6 +32,14 @@ struct LidClosedTab: View {
                         Button("Open Login Items…") { registration.openLoginItems() }
                     }
                     .padding(.vertical, 4)
+                    // Approval happens in System Settings, which doesn't tell us. Re-check while
+                    // this banner is on screen only, so it clears on its own.
+                    .task {
+                        while !Task.isCancelled && registration.status == .requiresApproval {
+                            try? await Task.sleep(for: .seconds(2))
+                            registration.refresh()
+                        }
+                    }
                 }
             }
 
