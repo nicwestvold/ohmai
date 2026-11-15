@@ -50,7 +50,7 @@ public actor UsageImporter {
     static let commitEvery = 16 << 20
 
     private let ledger: Ledger
-    public let sources: [Source]
+    public nonisolated let sources: [Source]
 
     public init(database: URL = UsageImporter.defaultDatabase, sources: [Source] = UsageImporter.defaultSources()) throws {
         self.ledger = try Ledger(url: database)

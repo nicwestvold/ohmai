@@ -117,7 +117,7 @@ public struct MonthComparison: Sendable, Equatable {
             row(agent: agent, this: this[agent] ?? UsageTotals(), same: same[agent] ?? UsageTotals(), full: full[agent] ?? UsageTotals())
         }
         let sum = { (pick: (Row) -> UsageTotals) in rows.map(pick).reduce(UsageTotals(), +) }
-        let total = row(agent: nil, this: sum(\.thisMonth), same: sum(\.lastMonthSameDays), full: sum(\.lastMonthTotal))
+        let total = row(agent: nil, this: sum(\.thisMonth), same: sum(\.lastMonthSameDays), full: sum(\.lastMonthTotal), lenient: true)
 
         return MonthComparison(
             today: today, lastMonth: lastMonth, rows: rows, total: total,
@@ -126,8 +126,11 @@ public struct MonthComparison: Sendable, Equatable {
 
     /// Compare on estimated cost when every token involved has a price (cost weights cache
     /// reads properly); otherwise on tokens, so an unpriced model doesn't skew the change.
-    private static func row(agent: Agent?, this: UsageTotals, same: UsageTotals, full: UsageTotals) -> Row {
-        let priced = this.fullyPriced && same.fullyPriced && full.fullyPriced && (this.cost + full.cost) > 0
+    /// The total row is `lenient`: it stays on cost whenever anything is priced, and the UI
+    /// marks it as a lower bound, so one unpriced agent doesn't hide everyone's dollars.
+    private static func row(agent: Agent?, this: UsageTotals, same: UsageTotals, full: UsageTotals, lenient: Bool = false) -> Row {
+        let hasCost = (this.cost + full.cost) > 0
+        let priced = hasCost && (lenient || (this.fullyPriced && same.fullyPriced && full.fullyPriced))
         return Row(agent: agent, thisMonth: this, lastMonthSameDays: same, lastMonthTotal: full, basis: priced ? .cost : .tokens)
     }
 }

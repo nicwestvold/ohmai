@@ -130,6 +130,19 @@ struct MonthComparisonTests {
         #expect(row.change == 0.5)
     }
 
+    @Test func totalStaysOnCostWhenOneAgentIsUnpriced() {
+        let daily = [
+            usage(.claude, day(2026, 11, 2), cost: 10),
+            usage(.claude, day(2026, 10, 2), cost: 5),
+            DailyUsage(agent: .codex, day: day(2026, 11, 3), totals: UsageTotals(tokens: 300, cost: 0, unpricedTokens: 300)),
+        ]
+        let c = MonthComparison.build(daily: daily, today: day(2026, 11, 14), historyStart: day(2026, 1, 1), calendar: cal)
+        #expect(c.rows.first { $0.agent == .codex }?.basis == .tokens)
+        #expect(c.total.basis == .cost)
+        #expect(!c.total.thisMonth.fullyPriced)
+        #expect(c.total.change == 1)
+    }
+
     @Test func totalRowSumsAgentsAndKeepsOrder() {
         let daily = [
             usage(.pi, day(2026, 11, 2), cost: 1),
