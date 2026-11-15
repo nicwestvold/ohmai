@@ -58,6 +58,8 @@ struct Footnote: View {
 struct GeneralTab: View {
     let model: AppModel
     @State private var footprint: Footprint?
+    @State private var confirmingUninstall = false
+    @State private var deleteHistory = true
 
     var body: some View {
         @Bindable var store = model.prefsStore
@@ -99,6 +101,9 @@ struct GeneralTab: View {
             Section {
                 LabeledContent("ohmai itself", value: footprint?.summary ?? "…")
                 LabeledContent("Version", value: Self.version)
+                LabeledContent("Remove ohmai") {
+                    Button("Uninstall…", role: .destructive) { confirmingUninstall = true }
+                }
             } footer: {
                 Text("ohmai makes no network requests. It reads transcripts only for usage numbers and never stores what you wrote.")
                     .font(.footnote)
@@ -108,6 +113,14 @@ struct GeneralTab: View {
         .onAppear {
             footprint = .current()
             model.launchAtLogin.refresh()
+        }
+        .sheet(isPresented: $confirmingUninstall) {
+            UninstallSheet(deleteHistory: $deleteHistory) {
+                confirmingUninstall = false
+                Task { await Uninstaller.run(model: model, deleteHistory: deleteHistory) }
+            } cancel: {
+                confirmingUninstall = false
+            }
         }
     }
 
@@ -239,6 +252,29 @@ struct AgentsTab: View {
 
     private func running(_ agent: OhmaiCore.Agent) -> Int {
         model.leaseBook.leases.filter { $0.session.agent == agent }.count
+    }
+}
+
+private struct UninstallSheet: View {
+    @Binding var deleteHistory: Bool
+    let confirm: () -> Void
+    let cancel: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Uninstall ohmai?").font(.headline)
+            Text("This turns sleep back on, removes the lid helper (it runs as root), the login item and the pi extension, then moves ohmai to the Trash.")
+                .fixedSize(horizontal: false, vertical: true)
+            Toggle("Also delete usage history and settings", isOn: $deleteHistory)
+            Footnote("Usage history is the only copy of months Claude Code has already deleted from its own transcripts.")
+            HStack {
+                Spacer()
+                Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
+                Button("Uninstall", role: .destructive, action: confirm).keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 420)
     }
 }
 
