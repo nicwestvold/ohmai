@@ -70,6 +70,7 @@ targets:
       # installed app's approved helper. Runs before code signing.
       - name: Strip lid helper from Debug builds
         basedOnDependencyAnalysis: false
+        showEnvVars: false
         script: |
           if [ "$CONFIGURATION" = "Debug" ]; then
             rm -rf "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchDaemons"

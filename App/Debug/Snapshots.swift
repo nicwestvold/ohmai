@@ -18,8 +18,7 @@ enum Snapshots {
             let pages: [(String, AnyView)] = [
                 ("menu", AnyView(MenuContent(model: model).background(.regularMaterial))),
                 ("settings-general", AnyView(GeneralTab(model: model).frame(width: 500))),
-                ("settings-power", AnyView(PowerTab(model: model).frame(width: 500))),
-                ("settings-lid", AnyView(LidClosedTab(model: model).frame(width: 500))),
+                ("settings-advanced", AnyView(AdvancedTab(model: model).frame(width: 500))),
                 ("settings-agents", AnyView(AgentsTab(model: model).frame(width: 500))),
             ]
             for (name, view) in pages {

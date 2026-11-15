@@ -155,6 +155,21 @@ struct MonthComparisonTests {
         #expect(c.total.lastMonthSameDays.cost == 1)
     }
 
+    @Test func dailySeriesCoversTheWholeMonth() {
+        let daily = [
+            usage(.claude, day(2026, 11, 1), cost: 10),
+            usage(.codex, day(2026, 11, 1), cost: 5),
+            usage(.claude, day(2026, 11, 14), cost: 20),
+            usage(.claude, day(2026, 10, 14), cost: 99),   // last month: not in the series
+        ]
+        let c = MonthComparison.build(daily: daily, today: day(2026, 11, 14), historyStart: day(2026, 1, 1), calendar: cal)
+        #expect(c.daily.count == 30)
+        #expect(c.daily[0] == 15)
+        #expect(c.daily[13] == 20)
+        #expect(c.daily[14...].allSatisfy { $0 == 0 })
+        #expect(c.daily.reduce(0, +) == c.total.thisMonth.cost)
+    }
+
     @Test func futureDaysThisMonthAreIgnored() {
         let c = MonthComparison.build(daily: [usage(.claude, day(2026, 11, 20), cost: 9)], today: day(2026, 11, 14), historyStart: nil, calendar: cal)
         #expect(c.rows.first?.thisMonth.cost ?? 0 == 0)

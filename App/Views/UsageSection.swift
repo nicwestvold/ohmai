@@ -7,6 +7,7 @@ import SwiftUI
 /// where last month stood on the same day.
 struct UsageSection: View {
     let usage: UsageModel
+    @State private var explaining = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -40,9 +41,19 @@ struct UsageSection: View {
                 .foregroundStyle(.secondary)
             Spacer()
             if let c {
-                Image(systemName: "info.circle")
-                    .foregroundStyle(.tertiary)
-                    .help(Self.explanation(c))
+                Button { explaining.toggle() } label: {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("How usage is calculated")
+                .popover(isPresented: $explaining, arrowEdge: .trailing) {
+                    Text(Self.explanation(c))
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(width: 260, alignment: .leading)
+                        .padding(14)
+                }
             }
         }
     }
@@ -50,17 +61,25 @@ struct UsageSection: View {
     private func hero(_ c: MonthComparison) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             label(c)
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                // No "+" on the hero: unpriced agents show their tokens in their own row below.
-                Text(c.total.basis == .cost ? Format.dollars(c.total.thisMonth.cost) : Format.amount(c.total.thisMonth, basis: .tokens))
-                    .font(.system(size: 34, weight: .semibold, design: .rounded))
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                if c.total.basis == .cost {
-                    Text("est.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+            HStack(alignment: .bottom, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    // No "+" on the hero: unpriced agents show their tokens in their own row below.
+                    Text(c.total.basis == .cost ? Format.dollars(c.total.thisMonth.cost) : Format.amount(c.total.thisMonth, basis: .tokens))
+                        .font(.system(size: 34, weight: .semibold, design: .rounded))
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    if c.total.basis == .cost {
+                        Text("est.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                Spacer(minLength: 8)
+                DailySparkline(values: c.daily, today: c.today.day, month: c.today, basis: c.total.basis)
+                    .frame(width: 112, height: 30)
+                    .padding(.bottom, 6)
             }
             context(c)
                 .font(.callout)
@@ -102,6 +121,47 @@ struct UsageSection: View {
     static func monthName(_ day: DayKey) -> String {
         let date = Calendar.current.date(from: DateComponents(year: day.year, month: day.month, day: 1)) ?? .now
         return date.formatted(.dateTime.month(.wide))
+    }
+}
+
+/// One column per day of the month: past days drawn, today emphasized, future days as faint
+/// placeholders, so it also shows how far into the month you are. Hover a column for its value.
+private struct DailySparkline: View {
+    let values: [Double]
+    let today: Int
+    let month: DayKey
+    let basis: MonthComparison.Row.Basis
+
+    var body: some View {
+        let peak = max(values.max() ?? 0, .leastNonzeroMagnitude)
+        HStack(alignment: .bottom, spacing: 1.5) {
+            ForEach(Array(values.enumerated()), id: \.offset) { index, value in
+                let day = index + 1
+                let past = day <= today
+                RoundedRectangle(cornerRadius: 1, style: .continuous)
+                    .fill(fill(day: day, past: past))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: past ? max(2, 30 * value / peak) : 2)
+                    .help(past ? "\(label(day)): \(amount(value))" : "")
+            }
+        }
+        .frame(maxHeight: .infinity, alignment: .bottom)
+        .accessibilityElement()
+        .accessibilityLabel("Daily usage this month, \(today) of \(values.count) days so far")
+    }
+
+    private func fill(day: Int, past: Bool) -> some ShapeStyle {
+        if !past { return AnyShapeStyle(.quaternary) }
+        return day == today ? AnyShapeStyle(.primary) : AnyShapeStyle(.primary.opacity(0.45))
+    }
+
+    private func label(_ day: Int) -> String {
+        let date = Calendar.current.date(from: DateComponents(year: month.year, month: month.month, day: day)) ?? .now
+        return date.formatted(.dateTime.month(.abbreviated).day())
+    }
+
+    private func amount(_ v: Double) -> String {
+        basis == .cost ? Format.dollars(v) : Format.tokens(Int(v)) + " tokens"
     }
 }
 

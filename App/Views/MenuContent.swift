@@ -83,20 +83,13 @@ struct MenuContent: View {
         }
     }
 
-    /// The power state, kept short.
+    /// Which agents are active. Power behavior stays out of the headline; it lives in
+    /// Settings → Advanced.
     private var subtitle: String {
-        let source = switch model.power.source {
-        case .ac: "on AC"
-        case .battery(let p): p.map { "on battery \($0)%" } ?? "on battery"
-        case .unknown: "power unknown"
+        let agents = Agent.allCases.filter { agent in
+            model.leaseBook.leases.contains { $0.session.agent == agent }
         }
-        switch model.decision {
-        case .stayAwakeLidClosed: return "Awake with the lid closed · \(source)"
-        case .stayAwake: return "Keeping your Mac awake · \(source)"
-        case .allowSleep(.noLeases): return "Your Mac can sleep as usual"
-        case .allowSleep(.keepAwakeOff): return "Keep-awake is off"
-        case .allowSleep: return "Letting your Mac sleep: \(model.decision.detail ?? source)"
-        }
+        return agents.isEmpty ? "No agents running" : agents.map(\.displayName).joined(separator: " · ")
     }
 
     // MARK: - Running

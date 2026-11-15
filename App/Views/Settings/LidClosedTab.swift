@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Opt-in for lid-closed mode, behind an explanation of what it does and what it risks.
-struct LidClosedTab: View {
+/// Sections for the Advanced tab's form.
+struct LidClosedSections: View {
     let model: AppModel
     @State private var confirming = false
 
@@ -10,7 +11,7 @@ struct LidClosedTab: View {
         let registration = model.lidRegistration
         let enabled = store.prefs.lidClosedModeEnabled
 
-        SettingsPage {
+        Group {
             Section {
                 Toggle(isOn: Binding(
                     get: { enabled },
@@ -19,6 +20,8 @@ struct LidClosedTab: View {
                     Text("Keep working with the lid closed")
                     Footnote("Closing the lid normally sleeps the Mac, even mid-task. With this on, a busy agent keeps it awake. An agent waiting on you never does.")
                 }
+            } header: {
+                Text("Lid closed")
             }
 
             if enabled && registration.status == .requiresApproval {

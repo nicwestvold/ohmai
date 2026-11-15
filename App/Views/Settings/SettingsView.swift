@@ -2,11 +2,12 @@ import OhmaiCore
 import OhmaiPiAdapter
 import SwiftUI
 
-/// Native tabbed Settings: one short page per concern instead of one long form.
+/// Native tabbed Settings. General and Agents are about what ohmai is for: your agents and
+/// their usage. Sleep behavior is real but secondary, so it lives under Advanced.
 struct SettingsView: View {
     let model: AppModel
 
-    enum Tab: Hashable { case general, power, lid, agents }
+    enum Tab: Hashable { case general, agents, advanced }
     @State private var tab: Tab = .general
 
     var body: some View {
@@ -14,15 +15,12 @@ struct SettingsView: View {
             GeneralTab(model: model)
                 .tabItem { Label("General", systemImage: "gearshape") }
                 .tag(Tab.general)
-            PowerTab(model: model)
-                .tabItem { Label("Power", systemImage: "battery.75percent") }
-                .tag(Tab.power)
-            LidClosedTab(model: model)
-                .tabItem { Label("Lid Closed", systemImage: "laptopcomputer") }
-                .tag(Tab.lid)
             AgentsTab(model: model)
                 .tabItem { Label("Agents", systemImage: "terminal") }
                 .tag(Tab.agents)
+            AdvancedTab(model: model)
+                .tabItem { Label("Advanced", systemImage: "slider.horizontal.3") }
+                .tag(Tab.advanced)
         }
         .frame(width: 500)
     }
@@ -65,15 +63,6 @@ struct GeneralTab: View {
         @Bindable var store = model.prefsStore
 
         SettingsPage {
-            Section {
-                Toggle(isOn: $store.prefs.keepAwakeEnabled) {
-                    Text("Keep the Mac awake while agents work")
-                    Footnote("Only while a session is busy or waiting on you. When they're done, your Mac sleeps as usual.")
-                }
-                Toggle("Keep the display on too", isOn: $store.prefs.keepDisplayAwake)
-                    .disabled(!store.prefs.keepAwakeEnabled)
-            }
-
             Section {
                 Toggle(isOn: launchAtLogin) {
                     Text("Open ohmai at login")
@@ -143,42 +132,53 @@ struct GeneralTab: View {
     }
 }
 
-// MARK: - Power
+// MARK: - Advanced
 
-struct PowerTab: View {
+/// Sleep behavior, timeouts and the optional lid-closed helper. Plain, factual wording.
+struct AdvancedTab: View {
     let model: AppModel
 
     var body: some View {
         @Bindable var store = model.prefsStore
 
-        SettingsPage {
+        Form {
             Section {
+                Toggle(isOn: $store.prefs.keepAwakeEnabled) {
+                    Text("Prevent idle sleep while an agent is working")
+                    Footnote("A standard power assertion, like caffeinate. Released as soon as agents stop or go quiet.")
+                }
+                Toggle("Keep the display on too", isOn: $store.prefs.keepDisplayAwake)
+                    .disabled(!store.prefs.keepAwakeEnabled)
                 Picker(selection: $store.prefs.batteryFloorPercent) {
                     ForEach([20, 30, 40, 50, 60, 70, 80], id: \.self) { Text("\($0)%").tag($0) }
                 } label: {
-                    Text("On battery, let the Mac sleep below")
+                    Text("Allow sleep on battery below")
                 }
-                LabeledContent("In Low Power Mode") { Text("Always lets the Mac sleep").foregroundStyle(.secondary) }
-                LabeledContent("When the Mac gets hot") { Text("Always lets the Mac sleep").foregroundStyle(.secondary) }
+                .disabled(!store.prefs.keepAwakeEnabled)
+            } header: {
+                Text("Idle sleep")
             } footer: {
-                Footnote("Plugged in, ohmai keeps the Mac awake for as long as agents work.")
+                Footnote("Low Power Mode and high temperature always allow sleep.")
             }
 
-            Section("Sessions") {
+            Section("Session timeouts") {
                 Picker(selection: $store.prefs.waitingCap) {
                     ForEach([15, 30, 60, 120, 240], id: \.self) { Text(Self.minutes($0)).tag(TimeInterval($0 * 60)) }
                 } label: {
-                    Text("Stop waiting for you after")
-                    Footnote("An agent asking for approval keeps the Mac awake this long, then lets it sleep.")
+                    Text("Waiting on you counts as active for")
                 }
                 Picker(selection: $store.prefs.busyQuietLimit) {
                     ForEach([30, 60, 120, 240, 480], id: \.self) { Text(Self.minutes($0)).tag(TimeInterval($0 * 60)) }
                 } label: {
-                    Text("Give up on a silent agent after")
-                    Footnote("A busy agent that writes nothing for this long is treated as stuck. Raise it if your builds or test runs take longer.")
+                    Text("Treat a silent agent as stuck after")
+                    Footnote("Raise this if your builds or test runs write nothing for longer.")
                 }
             }
+
+            LidClosedSections(model: model)
         }
+        .formStyle(.grouped)
+        .frame(height: 560)
     }
 
     static func minutes(_ m: Int) -> String {
