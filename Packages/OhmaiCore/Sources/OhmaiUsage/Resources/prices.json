@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "asOf": "2026-11-03",
+  "source": "Anthropic first-party API list prices (USD per million tokens). Cache writes are 1.25x input (5-minute) and 2x input (1-hour); cache reads 0.1x input unless listed. Haiku 5.5 is priced at its up-to-100K-prompt tier.",
+  "models": {
+    "claude-fable-5-2":  { "input": 8.0,  "output": 40.0, "cacheRead": 0.20 },
+    "claude-mythos-5-2": { "input": 8.0,  "output": 40.0, "cacheRead": 0.20 },
+    "claude-fable-5-1":  { "input": 10.0, "output": 50.0, "cacheRead": 0.25 },
+    "claude-mythos-5-1": { "input": 10.0, "output": 50.0, "cacheRead": 0.25 },
+    "claude-fable-5":    { "input": 10.0, "output": 50.0, "cacheRead": 1.00 },
+    "claude-mythos-5":   { "input": 10.0, "output": 50.0, "cacheRead": 1.00 },
+    "claude-opus-5-5":   { "input": 4.0,  "output": 20.0, "cacheRead": 0.20 },
+    "claude-opus-5":     { "input": 5.0,  "output": 25.0 },
+    "claude-opus-4-8":   { "input": 5.0,  "output": 25.0 },
+    "claude-opus-4-7":   { "input": 5.0,  "output": 25.0 },
+    "claude-opus-4-6":   { "input": 5.0,  "output": 25.0 },
+    "claude-sonnet-5-5": { "input": 2.0,  "output": 10.0, "cacheRead": 0.10 },
+    "claude-sonnet-5":   { "input": 2.0,  "output": 10.0 },
+    "claude-sonnet-4-6": { "input": 3.0,  "output": 15.0 },
+    "claude-haiku-5-5":  { "input": 0.10, "output": 0.50 },
+    "claude-haiku-4-5":  { "input": 1.0,  "output": 5.0 }
+  }
+}
