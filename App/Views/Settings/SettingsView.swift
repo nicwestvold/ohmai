@@ -2,39 +2,17 @@ import OhmaiCore
 import OhmaiPiAdapter
 import SwiftUI
 
-/// Native tabbed Settings. General and Agents are about what ohmai is for: your agents and
-/// their usage. Sleep behavior is real but secondary, so it lives under Advanced.
-struct SettingsView: View {
-    let model: AppModel
+// Pages of the Settings window (SettingsWindow.swift). General and Agents are about what
+// ohmai is for: your agents and their usage. Sleep behavior is real but secondary, so it
+// lives under Advanced.
 
-    enum Tab: Hashable { case general, agents, advanced }
-    @State private var tab: Tab = .general
-
-    var body: some View {
-        TabView(selection: $tab) {
-            GeneralTab(model: model)
-                .tabItem { Label("General", systemImage: "gearshape") }
-                .tag(Tab.general)
-            AgentsTab(model: model)
-                .tabItem { Label("Agents", systemImage: "terminal") }
-                .tag(Tab.agents)
-            AdvancedTab(model: model)
-                .tabItem { Label("Advanced", systemImage: "slider.horizontal.3") }
-                .tag(Tab.advanced)
-        }
-        .frame(width: 500)
-    }
-}
-
-/// A grouped settings page sized to its content.
+/// A grouped settings page that scrolls when it needs to.
 struct SettingsPage<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
         Form { content }
             .formStyle(.grouped)
-            .scrollDisabled(true)
-            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -64,6 +42,24 @@ struct GeneralTab: View {
 
         SettingsPage {
             Section {
+                HStack(spacing: 14) {
+                    HeaderFaceView(face: .focused)
+                        .foregroundStyle(Theme.amber)
+                        .frame(width: 52, height: 52)
+                        .background(Theme.ink, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("ohmai").font(.title2.weight(.semibold))
+                        Text("Your AI coding agents and their usage, at a glance.")
+                            .foregroundStyle(.secondary)
+                        Text("Version \(Self.version)")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+
+            Section {
                 Toggle(isOn: launchAtLogin) {
                     Text("Open ohmai at login")
                     Footnote("ohmai keeps its own copy of your usage history, which only grows while it's running.")
@@ -88,15 +84,17 @@ struct GeneralTab: View {
             }
 
             Section {
-                LabeledContent("ohmai itself", value: footprint?.summary ?? "…")
-                LabeledContent("Version", value: Self.version)
-                LabeledContent("Remove ohmai") {
-                    Button("Uninstall…", role: .destructive) { confirmingUninstall = true }
-                }
+                LabeledContent("Memory and disk", value: footprint?.summary ?? "…")
             } footer: {
                 Text("ohmai makes no network requests. It reads transcripts only for usage numbers and never stores what you wrote.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
+            }
+
+            Section {
+                LabeledContent("Remove ohmai and everything it installed") {
+                    Button("Uninstall…", role: .destructive) { confirmingUninstall = true }
+                }
             }
         }
         .onAppear {
@@ -178,7 +176,6 @@ struct AdvancedTab: View {
             LidClosedSections(model: model)
         }
         .formStyle(.grouped)
-        .frame(height: 560)
     }
 
     static func minutes(_ m: Int) -> String {

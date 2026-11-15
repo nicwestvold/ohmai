@@ -3,7 +3,6 @@ import SwiftUI
 
 struct MenuContent: View {
     let model: AppModel
-    @Environment(\.openSettings) private var openSettings
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -134,8 +133,7 @@ struct MenuContent: View {
             }
             Button {
                 dismiss()  // close the dropdown, like a native menu does
-                NSApp.activate()
-                openSettings()
+                SettingsWindow.shared.show(model: model)
             } label: {
                 MenuRowLabel(title: "Settings…", systemImage: "gearshape", shortcut: "⌘,")
             }

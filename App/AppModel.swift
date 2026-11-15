@@ -107,6 +107,7 @@ final class AppModel {
         reevaluate()
         #if DEBUG
         Snapshots.runIfRequested(model: self)
+        Snapshots.memoryProbeIfRequested(model: self)
         #endif
     }
 

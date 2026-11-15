@@ -11,9 +11,6 @@ struct OhmaiApp: App {
             MenuBarIcon(state: model.iconState)
         }
         .menuBarExtraStyle(.window)
-
-        Settings {
-            SettingsView(model: model)
-        }
+        // Settings is an ordinary window (SettingsWindow) so it's freed when closed.
     }
 }
