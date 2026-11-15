@@ -53,6 +53,8 @@ public struct Prefs: Sendable, Equatable {
     public var signalTimeout: TimeInterval
     /// A waiting lease expires this long after waiting started.
     public var waitingCap: TimeInterval
+    /// Adapters release a busy session with no transcript or status writes for this long.
+    public var busyQuietLimit: TimeInterval
 
     public init(
         keepAwakeEnabled: Bool = true,
@@ -61,7 +63,8 @@ public struct Prefs: Sendable, Equatable {
         lidClosedModeEnabled: Bool = false,
         lidClosedBatteryFloorPercent: Int = 30,
         signalTimeout: TimeInterval = 10 * 60,
-        waitingCap: TimeInterval = 60 * 60
+        waitingCap: TimeInterval = 60 * 60,
+        busyQuietLimit: TimeInterval = 60 * 60
     ) {
         self.keepAwakeEnabled = keepAwakeEnabled
         self.keepDisplayAwake = keepDisplayAwake
@@ -70,6 +73,7 @@ public struct Prefs: Sendable, Equatable {
         self.lidClosedBatteryFloorPercent = lidClosedBatteryFloorPercent
         self.signalTimeout = signalTimeout
         self.waitingCap = waitingCap
+        self.busyQuietLimit = busyQuietLimit
     }
 
     public static let `default` = Prefs()

@@ -120,6 +120,7 @@ The **dropdown** shows what's running and the month's token usage. Keep-awake co
   - the pid is dead
   - the pid's start time no longer matches (pid reused)
 - Expiry covers crashes, `kill -9` and Claude's missing Esc hook.
+- **Quiet limit (busy):** a busy status alone isn't trusted forever. If a busy session writes nothing (no transcript or subagent transcript, no status change) for 1 hour (configurable), its adapter releases it, which covers an agent stuck on `busy`. It comes back when anything is written again. Only modification times are read. Hooks wouldn't help: a single long tool call is silent to hooks too.
 - **Waiting is not the same as busy.** A session waiting on you (an approval or question) holds a *capped* lease: it keeps the Mac awake for up to 1 hour (configurable) after waiting starts, then releases even if the session is still alive. Busy leases have no cap, only signal-based expiry. A waiting lease never keeps a closed lid awake.
 
 ## Power policy

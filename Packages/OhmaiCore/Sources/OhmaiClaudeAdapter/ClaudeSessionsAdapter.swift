@@ -13,12 +13,15 @@ private let log = Logger(subsystem: "com.westvold.ohmai", category: "claude-adap
 @MainActor
 public final class ClaudeSessionsAdapter {
     public var onEvents: (([ActivityEvent]) -> Void)?
+    /// How long a busy session may go without writing anything. Set from Prefs.
+    public var quietLimit: TimeInterval = Prefs.default.busyQuietLimit
 
     private let directory: URL
     private let scanner: ClaudeSessionScanner
     private let renewInterval: Duration
     private var live: [SessionKey: Activity] = [:]
     private var loggedUnknown: Set<String> = []
+    private var loggedQuiet: Set<SessionKey> = []
     private var directoryWatcher: DirectoryWatcher?
     private var parentWatcher: DirectoryWatcher?
     private var exitWatcher: ProcessExitWatcher?
@@ -31,10 +34,11 @@ public final class ClaudeSessionsAdapter {
     public init(
         directory: URL = ClaudeSessionsAdapter.defaultDirectory,
         inspector: any ProcessInspector = DarwinProcessInspector(),
+        transcripts: any TranscriptActivity = ClaudeTranscriptActivity(),
         renewInterval: Duration = .seconds(30)
     ) {
         self.directory = directory
-        self.scanner = ClaudeSessionScanner(inspector: inspector)
+        self.scanner = ClaudeSessionScanner(inspector: inspector, transcripts: transcripts)
         self.renewInterval = renewInterval
     }
 
@@ -47,14 +51,19 @@ public final class ClaudeSessionsAdapter {
     /// Re-reads the directory now. Also called on system wake.
     public func rescan() {
         let files = readSessionFiles()
-        let result = scanner.scan(files: files, previous: live, now: .now)
+        let result = scanner.scan(files: files, previous: live, now: .now, quietLimit: quietLimit)
         live = result.live
+
+        for key in result.quiet.subtracting(loggedQuiet) {
+            log.notice("Claude session pid \(key.pid, privacy: .public) is busy but silent past the quiet limit; releasing")
+        }
+        loggedQuiet = result.quiet
 
         for raw in result.unknownStatuses.subtracting(loggedUnknown) {
             log.warning("unknown Claude session status \(raw, privacy: .public); treating as unknown")
             loggedUnknown.insert(raw)
         }
-        exitWatcher?.watch(Set(live.keys.map(\.pid)))
+        exitWatcher?.watch(Set(live.keys.map(\.pid)).union(loggedQuiet.map(\.pid)))
         updateRenewTimer()
         if !result.events.isEmpty { onEvents?(result.events) }
     }
@@ -89,7 +98,8 @@ public final class ClaudeSessionsAdapter {
     }
 
     private func updateRenewTimer() {
-        let active = live.values.contains { $0 == .busy || $0 == .waiting }
+        // Quiet sessions keep the scan going too, so they come back once they write again.
+        let active = live.values.contains { $0 == .busy || $0 == .waiting } || !loggedQuiet.isEmpty
         guard active else {
             renewTimer?.cancel()
             renewTimer = nil

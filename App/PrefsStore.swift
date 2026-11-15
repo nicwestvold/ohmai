@@ -23,6 +23,7 @@ final class PrefsStore {
         static let batteryFloorPercent = "batteryFloorPercent"
         static let signalTimeout = "signalTimeoutSeconds"
         static let waitingCap = "waitingCapSeconds"
+        static let busyQuietLimit = "busyQuietLimitSeconds"
         static let lidClosedModeEnabled = "lidClosedModeEnabled"
         static let lidClosedBatteryFloorPercent = "lidClosedBatteryFloorPercent"
     }
@@ -36,6 +37,7 @@ final class PrefsStore {
             Key.batteryFloorPercent: d.batteryFloorPercent,
             Key.signalTimeout: d.signalTimeout,
             Key.waitingCap: d.waitingCap,
+            Key.busyQuietLimit: d.busyQuietLimit,
             Key.lidClosedModeEnabled: d.lidClosedModeEnabled,
             Key.lidClosedBatteryFloorPercent: d.lidClosedBatteryFloorPercent,
         ])
@@ -46,7 +48,8 @@ final class PrefsStore {
             lidClosedModeEnabled: defaults.bool(forKey: Key.lidClosedModeEnabled),
             lidClosedBatteryFloorPercent: defaults.integer(forKey: Key.lidClosedBatteryFloorPercent),
             signalTimeout: defaults.double(forKey: Key.signalTimeout),
-            waitingCap: defaults.double(forKey: Key.waitingCap)
+            waitingCap: defaults.double(forKey: Key.waitingCap),
+            busyQuietLimit: defaults.double(forKey: Key.busyQuietLimit)
         )
     }
 
@@ -56,6 +59,7 @@ final class PrefsStore {
         defaults.set(prefs.batteryFloorPercent, forKey: Key.batteryFloorPercent)
         defaults.set(prefs.signalTimeout, forKey: Key.signalTimeout)
         defaults.set(prefs.waitingCap, forKey: Key.waitingCap)
+        defaults.set(prefs.busyQuietLimit, forKey: Key.busyQuietLimit)
         defaults.set(prefs.lidClosedModeEnabled, forKey: Key.lidClosedModeEnabled)
         defaults.set(prefs.lidClosedBatteryFloorPercent, forKey: Key.lidClosedBatteryFloorPercent)
     }

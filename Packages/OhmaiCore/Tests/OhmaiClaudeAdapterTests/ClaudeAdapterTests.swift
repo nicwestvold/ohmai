@@ -15,6 +15,24 @@ struct FakeInspector: ProcessInspector {
     func startTime(of pid: Int32) -> Date? { processes[pid] }
 }
 
+struct FakeTranscripts: TranscriptActivity {
+    var writes: [String: Date] = [:]
+    func lastWrite(sessionId: String) -> Date? { writes[sessionId] }
+}
+
+/// Default: the transcript was written just now, so the quiet limit never trips.
+private let fresh = FakeTranscripts(writes: [fixtureSession: now])
+
+private func scanner(_ inspector: FakeInspector, _ transcripts: FakeTranscripts = fresh) -> ClaudeSessionScanner {
+    ClaudeSessionScanner(inspector: inspector, transcripts: transcripts)
+}
+
+private extension ClaudeSessionScanner {
+    func scan(files: [Data], previous: [SessionKey: Activity], now: Date) -> Result {
+        scan(files: files, previous: previous, now: now, quietLimit: 3600)
+    }
+}
+
 private let alive = FakeInspector(processes: [fixturePid: fixtureProcessStart])
 private let dead = FakeInspector(processes: [:])
 
@@ -96,13 +114,13 @@ struct ClaudeSessionFileTests {
 struct ClaudeSessionScannerTests {
     @Test(arguments: [("busy", Activity.busy), ("waiting", .waiting), ("idle", .idle)])
     func emitsActivityForLiveSession(_ name: String, _ activity: Activity) throws {
-        let result = ClaudeSessionScanner(inspector: alive).scan(files: [try fixture(name)], previous: [:], now: now)
+        let result = scanner(alive).scan(files: [try fixture(name)], previous: [:], now: now)
         #expect(result.events == [ActivityEvent(session: key, activity: activity, at: now, project: "/Users/example/projects/demo")])
         #expect(result.live == [key: activity])
     }
 
     @Test func busyIsReEmittedEveryScanToRenew() throws {
-        let scanner = ClaudeSessionScanner(inspector: alive)
+        let scanner = scanner(alive)
         let first = scanner.scan(files: [try fixture("busy")], previous: [:], now: now)
         let second = scanner.scan(files: [try fixture("busy")], previous: first.live, now: now.addingTimeInterval(30))
         #expect(second.events.map(\.activity) == [.busy])
@@ -110,7 +128,7 @@ struct ClaudeSessionScannerTests {
     }
 
     @Test func deadPidIsIgnoredAndGoneIfKnown() throws {
-        let scanner = ClaudeSessionScanner(inspector: dead)
+        let scanner = scanner(dead)
         #expect(scanner.scan(files: [try fixture("busy")], previous: [:], now: now).events.isEmpty)
         let result = scanner.scan(files: [try fixture("busy")], previous: [key: .busy], now: now)
         #expect(result.events == [ActivityEvent(session: key, activity: .gone, at: now)])
@@ -118,27 +136,27 @@ struct ClaudeSessionScannerTests {
     }
 
     @Test func removedFileIsGone() {
-        let result = ClaudeSessionScanner(inspector: alive).scan(files: [], previous: [key: .busy], now: now)
+        let result = scanner(alive).scan(files: [], previous: [key: .busy], now: now)
         #expect(result.events == [ActivityEvent(session: key, activity: .gone, at: now)])
     }
 
     @Test func reusedPidIsNotTheSession() throws {
         // Same pid, but the kernel says this process started an hour later.
         let reused = FakeInspector(processes: [fixturePid: fixtureProcessStart.addingTimeInterval(3600)])
-        let result = ClaudeSessionScanner(inspector: reused).scan(files: [try fixture("busy")], previous: [key: .busy], now: now)
+        let result = scanner(reused).scan(files: [try fixture("busy")], previous: [key: .busy], now: now)
         #expect(result.events.map(\.activity) == [.gone])
     }
 
     @Test func reusedPidDetectedFromStartedAtWhenProcStartMissing() throws {
         let data = try edited("busy") { $0["procStart"] = nil }
         let reused = FakeInspector(processes: [fixturePid: fixtureProcessStart.addingTimeInterval(3600)])
-        #expect(ClaudeSessionScanner(inspector: reused).scan(files: [data], previous: [:], now: now).events.isEmpty)
-        #expect(ClaudeSessionScanner(inspector: alive).scan(files: [data], previous: [:], now: now).events.map(\.activity) == [.busy])
+        #expect(scanner(reused).scan(files: [data], previous: [:], now: now).events.isEmpty)
+        #expect(scanner(alive).scan(files: [data], previous: [:], now: now).events.map(\.activity) == [.busy])
     }
 
     @Test func unknownStatusEmitsNothingAndReleasesKnownSession() throws {
         let data = try edited("busy") { $0["status"] = "pondering" }
-        let result = ClaudeSessionScanner(inspector: alive).scan(files: [data], previous: [key: .busy], now: now)
+        let result = scanner(alive).scan(files: [data], previous: [key: .busy], now: now)
         #expect(result.events == [ActivityEvent(session: key, activity: .gone, at: now)])
         #expect(result.unknownStatuses == ["pondering"])
     }
@@ -146,7 +164,7 @@ struct ClaudeSessionScannerTests {
     @Test func newSessionIdInSamePidReplacesOldOne() throws {
         // `/clear` or `/resume` swaps the session id while the process lives on.
         let data = try edited("busy") { $0["sessionId"] = "00000000-0000-4000-8000-000000000002" }
-        let result = ClaudeSessionScanner(inspector: alive).scan(files: [data], previous: [key: .busy], now: now)
+        let result = scanner(alive).scan(files: [data], previous: [key: .busy], now: now)
         #expect(result.events.map(\.activity) == [.busy, .gone])
         #expect(result.events.last?.session == key)
     }
@@ -157,15 +175,107 @@ struct ClaudeSessionScannerTests {
             json["sessionId"] = "00000000-0000-4000-8000-000000000003"
         }
         let inspector = FakeInspector(processes: [fixturePid: fixtureProcessStart, 5151: fixtureProcessStart])
-        let result = ClaudeSessionScanner(inspector: inspector).scan(files: [try fixture("busy"), other], previous: [:], now: now)
+        let result = scanner(inspector).scan(files: [try fixture("busy"), other], previous: [:], now: now)
         #expect(Set(result.events.map(\.activity)) == [.busy, .waiting])
         #expect(result.live.count == 2)
     }
 
     @Test func garbageFilesAreSkipped() throws {
-        let result = ClaudeSessionScanner(inspector: alive).scan(
+        let result = scanner(alive).scan(
             files: [Data("{".utf8), try fixture("busy")], previous: [:], now: now)
         #expect(result.events.map(\.activity) == [.busy])
+    }
+}
+
+@Suite("Quiet limit")
+struct QuietLimitTests {
+    // The fixture's statusUpdatedAt is 1_794_702_374.093, 26s before `now`.
+    let longAgo = now.addingTimeInterval(-7200)
+
+    @Test func busyWithRecentTranscriptStaysBusy() throws {
+        let result = scanner(alive).scan(files: [try fixture("busy")], previous: [:], now: now, quietLimit: 3600)
+        #expect(result.events.map(\.activity) == [.busy])
+        #expect(result.quiet.isEmpty)
+    }
+
+    @Test func busyButSilentIsReleased() throws {
+        let data = try edited("busy") { $0["statusUpdatedAt"] = (now.timeIntervalSince1970 - 7200) * 1000 }
+        let quiet = FakeTranscripts(writes: [fixtureSession: longAgo])
+        let result = scanner(alive, quiet).scan(files: [data], previous: [key: .busy], now: now, quietLimit: 3600)
+        #expect(result.events == [ActivityEvent(session: key, activity: .gone, at: now)])
+        #expect(result.quiet == [key])
+    }
+
+    @Test func recentStatusChangeCountsAsLife() throws {
+        // Transcript quiet, but the status flipped to busy 26s ago.
+        let quiet = FakeTranscripts(writes: [fixtureSession: longAgo])
+        let result = scanner(alive, quiet).scan(files: [try fixture("busy")], previous: [:], now: now, quietLimit: 3600)
+        #expect(result.events.map(\.activity) == [.busy])
+    }
+
+    @Test func noTranscriptFallsBackToStatusTime() throws {
+        let stale = try edited("busy") { $0["statusUpdatedAt"] = (now.timeIntervalSince1970 - 7200) * 1000 }
+        #expect(scanner(alive, FakeTranscripts()).scan(files: [stale], previous: [:], now: now, quietLimit: 3600).quiet == [key])
+        #expect(scanner(alive, FakeTranscripts()).scan(files: [try fixture("busy")], previous: [:], now: now, quietLimit: 3600).quiet.isEmpty)
+    }
+
+    @Test func noEvidenceAtAllIsNotQuiet() throws {
+        let bare = try edited("busy") { $0["statusUpdatedAt"] = nil }
+        let result = scanner(alive, FakeTranscripts()).scan(files: [bare], previous: [:], now: now, quietLimit: 3600)
+        #expect(result.events.map(\.activity) == [.busy])
+    }
+
+    @Test func waitingIsNotSubjectToQuietLimit() throws {
+        let quiet = FakeTranscripts(writes: [fixtureSession: longAgo])
+        let data = try edited("waiting") { $0["statusUpdatedAt"] = (now.timeIntervalSince1970 - 7200) * 1000 }
+        #expect(scanner(alive, quiet).scan(files: [data], previous: [:], now: now, quietLimit: 3600).events.map(\.activity) == [.waiting])
+    }
+
+    @Test func comesBackWhenTranscriptWritesResume() throws {
+        let data = try edited("busy") { $0["statusUpdatedAt"] = (now.timeIntervalSince1970 - 7200) * 1000 }
+        let first = scanner(alive, FakeTranscripts(writes: [fixtureSession: longAgo]))
+            .scan(files: [data], previous: [:], now: now, quietLimit: 3600)
+        let second = scanner(alive).scan(files: [data], previous: first.live, now: now, quietLimit: 3600)
+        #expect(second.events.map(\.activity) == [.busy])
+    }
+}
+
+@Suite("ClaudeTranscriptActivity")
+struct ClaudeTranscriptActivityTests {
+    /// Builds a fake projects tree in a temp directory. Files are empty: only mtimes matter.
+    private func tree() throws -> URL {
+        let root = FileManager.default.temporaryDirectory.appending(path: "ohmai-tests-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root.appending(path: "-Users-example-demo/s1/subagents"), withIntermediateDirectories: true)
+        return root
+    }
+
+    private func touch(_ url: URL, at date: Date) throws {
+        FileManager.default.createFile(atPath: url.path, contents: Data())
+        try FileManager.default.setAttributes([.modificationDate: date], ofItemAtPath: url.path)
+    }
+
+    @Test func findsTranscriptAndNewestSubagent() throws {
+        let root = try tree()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let project = root.appending(path: "-Users-example-demo")
+        try touch(project.appending(path: "s1.jsonl"), at: Date(timeIntervalSince1970: 1000))
+        try touch(project.appending(path: "s1/subagents/agent-a.jsonl"), at: Date(timeIntervalSince1970: 3000))
+        try touch(project.appending(path: "s1/subagents/agent-b.jsonl"), at: Date(timeIntervalSince1970: 2000))
+        let activity = ClaudeTranscriptActivity(projects: root)
+        #expect(activity.lastWrite(sessionId: "s1") == Date(timeIntervalSince1970: 3000))
+    }
+
+    @Test func missingSessionIsNil() throws {
+        let root = try tree()
+        defer { try? FileManager.default.removeItem(at: root) }
+        #expect(ClaudeTranscriptActivity(projects: root).lastWrite(sessionId: "nope") == nil)
+    }
+
+    @Test(arguments: ["", "../s1", "a/b", ".."])
+    func rejectsPathLikeIds(_ id: String) throws {
+        let root = try tree()
+        defer { try? FileManager.default.removeItem(at: root) }
+        #expect(ClaudeTranscriptActivity(projects: root).lastWrite(sessionId: id) == nil)
     }
 }
 

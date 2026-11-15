@@ -121,6 +121,10 @@ final class AppModel {
     func reevaluate() {
         let now = Date.now
         let prefs = prefsStore.prefs
+        if claude.quietLimit != prefs.busyQuietLimit {
+            claude.quietLimit = prefs.busyQuietLimit
+            claude.rescan()
+        }
         leaseBook.prune(at: now, prefs: prefs)
         let next = Policy.decide(leases: leaseBook.leases, power: powerState, prefs: prefs, now: now)
         if next != decision { decision = next }

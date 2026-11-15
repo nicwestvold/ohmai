@@ -2,8 +2,18 @@ import Foundation
 import OhmaiAdapterSupport
 import OhmaiCore
 
+/// When a session last showed signs of life beyond its status flag. Faked in tests.
+public protocol TranscriptActivity: Sendable {
+    /// The newest write to the session's transcript (or its subagents'), or nil if none found.
+    func lastWrite(sessionId: String) -> Date?
+}
+
 /// Turns a snapshot of the sessions directory into `ActivityEvent`s. Pure apart from the
-/// injected `ProcessInspector`, so it's tested against fixtures.
+/// injected `ProcessInspector` and `TranscriptActivity`, so it's tested against fixtures.
+///
+/// **Quiet limit:** a `busy` status alone isn't trusted forever. If neither the transcript
+/// nor the status has changed for `quietLimit`, the session is treated as stuck and released.
+/// It comes back as soon as anything is written again.
 ///
 /// Each scan re-emits `busy` / `waiting` for every live session: Claude only rewrites the
 /// file when the status changes, so the scan itself is what renews the lease.
@@ -14,17 +24,22 @@ public struct ClaudeSessionScanner: Sendable {
         public var live: [SessionKey: Activity] = [:]
         /// Status strings this version doesn't understand, for logging once.
         public var unknownStatuses: Set<String> = []
+        /// Busy sessions released for being quiet too long, for logging.
+        public var quiet: Set<SessionKey> = []
     }
 
     private let inspector: any ProcessInspector
+    private let transcripts: any TranscriptActivity
 
-    public init(inspector: any ProcessInspector) {
+    public init(inspector: any ProcessInspector, transcripts: any TranscriptActivity) {
         self.inspector = inspector
+        self.transcripts = transcripts
     }
 
     /// - `files`: contents of each `<pid>.json` in the directory.
     /// - `previous`: `live` from the last scan, so vanished sessions get a `gone`.
-    public func scan(files: [Data], previous: [SessionKey: Activity], now: Date) -> Result {
+    /// - `quietLimit`: how long a busy session may go without any write.
+    public func scan(files: [Data], previous: [SessionKey: Activity], now: Date, quietLimit: TimeInterval) -> Result {
         var result = Result()
         var projects: [SessionKey: String] = [:]
 
@@ -42,7 +57,15 @@ public struct ClaudeSessionScanner: Sendable {
 
             let activity: Activity
             switch file.status {
-            case .busy: activity = .busy
+            case .busy:
+                let lastSign = [transcripts.lastWrite(sessionId: file.sessionId), file.statusUpdatedAt]
+                    .compactMap { $0 }.max()
+                // No evidence at all (no transcript, no timestamp): fall back to lease expiry.
+                if let lastSign, now.timeIntervalSince(lastSign) > quietLimit {
+                    result.quiet.insert(key)
+                    continue
+                }
+                activity = .busy
             case .waiting: activity = .waiting
             case .idle: activity = .idle
             case .unknown(let raw):

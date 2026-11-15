@@ -26,6 +26,12 @@ struct SettingsView: View {
                 Stepper(value: minutes($store.prefs.waitingCap), in: 5...240, step: 5) {
                     LabeledContent("Stop waiting on you after", value: "\(Int(store.prefs.waitingCap / 60)) min")
                 }
+                Stepper(value: minutes($store.prefs.busyQuietLimit), in: 15...480, step: 15) {
+                    LabeledContent("Release a busy agent that's written nothing for", value: "\(Int(store.prefs.busyQuietLimit / 60)) min")
+                }
+                Text("A long build or test run writes nothing until it finishes. Raise this if yours run longer.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             LidClosedSection(model: model)

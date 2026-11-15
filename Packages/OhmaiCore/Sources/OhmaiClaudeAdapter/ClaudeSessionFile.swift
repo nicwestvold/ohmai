@@ -21,6 +21,8 @@ public struct ClaudeSessionFile: Sendable, Equatable {
     public let startedAt: Date?
     /// The process start time Claude recorded (`procStart`, ctime-style, UTC).
     public let processStart: Date?
+    /// When `status` last changed (`statusUpdatedAt`, epoch ms).
+    public let statusUpdatedAt: Date?
 
     /// Largest file we'll read. Real ones are well under 1 KB.
     public static let maxSize = 64 * 1024
@@ -49,7 +51,8 @@ public struct ClaudeSessionFile: Sendable, Equatable {
             cwd: json["cwd"] as? String,
             status: status,
             startedAt: (json["startedAt"] as? NSNumber).map { Date(timeIntervalSince1970: $0.doubleValue / 1000) },
-            processStart: (json["procStart"] as? String).flatMap(parseProcStart)
+            processStart: (json["procStart"] as? String).flatMap(parseProcStart),
+            statusUpdatedAt: (json["statusUpdatedAt"] as? NSNumber).map { Date(timeIntervalSince1970: $0.doubleValue / 1000) }
         )
     }
 
