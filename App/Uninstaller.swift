@@ -86,7 +86,8 @@ enum Uninstaller {
         alert.runModal()
 
         if inApplications {
-            NSWorkspace.shared.recycle([app]) { _, _ in
+            // The completion runs off the main thread: keep it out of main-actor isolation.
+            NSWorkspace.shared.recycle([app]) { @Sendable _, _ in
                 DispatchQueue.main.async { NSApp.terminate(nil) }
             }
         } else {

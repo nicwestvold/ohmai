@@ -78,7 +78,10 @@ public final class XPCLidHelperClient: LidHelperClient {
         guard let connection = currentConnection() else { return .failure(.misconfigured) }
         return await withCheckedContinuation { continuation in
             let once = Once(continuation)
-            let proxy = connection.remoteObjectProxyWithErrorHandler { _ in once.resume(.failure(.unreachable)) }
+            // XPC calls this on its own queue. `@Sendable` keeps it from inheriting this type's
+            // main-actor isolation, which Swift 6 checks at runtime and traps on (it crashed
+            // the app when the helper was unregistered mid-connection).
+            let proxy = connection.remoteObjectProxyWithErrorHandler { @Sendable _ in once.resume(.failure(.unreachable)) }
             guard let helper = proxy as? LidHelperProtocol else {
                 once.resume(.failure(.unreachable))
                 return
@@ -91,13 +94,20 @@ public final class XPCLidHelperClient: LidHelperClient {
         }
     }
 
+    /// Test hook: cut the connection, as unregistering the helper does, so pending requests
+    /// fail through XPC's error handler.
+    func invalidateConnection() {
+        connection?.invalidate()
+    }
+
     private func currentConnection() -> NSXPCConnection? {
         if let connection { return connection }
         guard let requirement else { return nil }
         let c = NSXPCConnection(machServiceName: LidHelperXPC.machServiceName, options: .privileged)
         c.remoteObjectInterface = NSXPCInterface(with: LidHelperProtocol.self)
         c.setCodeSigningRequirement(requirement)
-        c.invalidationHandler = { [weak self] in
+        // Also called on an XPC queue: not main-actor code (see `call`).
+        c.invalidationHandler = { @Sendable [weak self] in
             Task { @MainActor in self?.connection = nil }
         }
         c.resume()
