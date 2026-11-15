@@ -6,7 +6,7 @@ ohmai will update itself with [Sparkle 2](https://sparkle-project.org), the open
 
 Why: while ohmai is private and mostly used by its author, Sparkle's cost (a third-party dependency next to a root helper, an EdDSA key to guard forever, a public feed, and a network call that weakens the privacy promise) outweighs automatic updates. Revisit if ohmai goes open source or gains users who won't update by hand. A Homebrew cask is the step before Sparkle: updates via `brew`, still no network code in ohmai.
 
-Moving later: a private repo's release assets can't be fetched without a token (never ship one in the app), so Sparkle needs a public feed. If the repo goes public, its existing releases become downloadable and the appcast can live there. A public `nicwestvold/ohmai-releases` repo exists from an earlier plan; it's unused.
+Moving later: a private repo's release assets can't be fetched without a token (never ship one in the app), so Sparkle needs a public feed. If the repo goes public, its existing releases become downloadable and the appcast can live there. (A separate public `ohmai-releases` repo was considered and deleted; if the source stays private but Sparkle is wanted, that pattern works: a public repo holding only zips and the appcast.)
 
 Everything below is the plan for when Sparkle is wired.
 
