@@ -90,6 +90,9 @@ final class AppModel {
         claude.start()
         codex.start()
         reevaluate()
+        #if DEBUG
+        Snapshots.runIfRequested(model: self)
+        #endif
     }
 
     static func makeClaudeAdapter() -> ClaudeSessionsAdapter {

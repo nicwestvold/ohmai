@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Opt-in for lid-closed mode, behind an explanation of what it does and what it risks.
-struct LidClosedSection: View {
+struct LidClosedTab: View {
     let model: AppModel
     @State private var confirming = false
 
@@ -10,34 +10,41 @@ struct LidClosedSection: View {
         let registration = model.lidRegistration
         let enabled = store.prefs.lidClosedModeEnabled
 
-        Section {
-            Toggle("Keep working with the lid closed", isOn: Binding(
-                get: { enabled },
-                set: { on in
-                    if on { confirming = true } else { model.setLidClosedMode(false) }
-                }
-            ))
-
-            Text(Self.explanation)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            if enabled {
-                LabeledContent("Helper", value: registration.status.summary)
-                if registration.status == .requiresApproval {
-                    Button("Open Login Items…") { registration.openLoginItems() }
-                }
-                if let error = registration.lastError {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-                Stepper(value: $store.prefs.lidClosedBatteryFloorPercent, in: 10...95, step: 5) {
-                    LabeledContent("On battery, only above", value: "\(store.prefs.lidClosedBatteryFloorPercent)%")
+        SettingsPage {
+            Section {
+                Toggle(isOn: Binding(
+                    get: { enabled },
+                    set: { on in if on { confirming = true } else { model.setLidClosedMode(false) } }
+                )) {
+                    Text("Keep working with the lid closed")
+                    Footnote("Closing the lid normally sleeps the Mac, even mid-task. With this on, a busy agent keeps it awake. An agent waiting on you never does.")
                 }
             }
-        } header: {
-            Text("Lid closed")
+
+            if enabled {
+                Section {
+                    LabeledContent("Helper") {
+                        HelperBadge(status: registration.status)
+                    }
+                    if registration.status == .requiresApproval {
+                        HStack {
+                            Footnote("macOS needs your OK in System Settings → Login Items.")
+                            Spacer()
+                            Button("Open Login Items…") { registration.openLoginItems() }
+                        }
+                    }
+                    if let error = registration.lastError {
+                        Text(error).font(.callout).foregroundStyle(.red)
+                    }
+                    Picker(selection: $store.prefs.lidClosedBatteryFloorPercent) {
+                        ForEach([20, 30, 40, 50, 60], id: \.self) { Text("\($0)%").tag($0) }
+                    } label: {
+                        Text("On battery, only above")
+                    }
+                } footer: {
+                    Footnote("If ohmai stops responding, the helper turns sleep back on by itself within 90 seconds.")
+                }
+            }
         }
         .onAppear { registration.refresh() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
@@ -51,18 +58,42 @@ struct LidClosedSection: View {
         }
     }
 
-    static let explanation = """
-        Closing the lid normally puts the Mac to sleep, even mid-task. With this on, ohmai \
-        keeps it awake while an agent is busy (not while it's waiting on you), using a small \
-        helper that runs as root.
-        """
-
     static let risks = """
         A closed MacBook in a bag can get hot and drain its battery. ohmai lets it sleep on \
-        battery below your floor, when the Mac gets hot, as soon as agents finish, and within \
+        battery below your floor, when it gets hot, as soon as agents finish, and within \
         90 seconds if ohmai itself stops responding.
 
-        macOS will ask you to approve the helper in System Settings → Login Items. \
-        It only ever runs `pmset disablesleep`.
+        This installs a small helper that runs as root. Its only job is turning sleep off \
+        and on (pmset disablesleep). macOS will ask you to approve it in Login Items.
         """
+}
+
+private struct HelperBadge: View {
+    let status: LidHelperRegistration.Status
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Circle().fill(color).frame(width: 8, height: 8)
+            Text(label).foregroundStyle(.secondary)
+        }
+    }
+
+    private var label: String {
+        switch status {
+        case .enabled: "Approved"
+        case .requiresApproval: "Waiting for approval"
+        case .notRegistered: "Not installed"
+        case .notFound: "Missing from this build"
+        case .unknown: "Checking…"
+        }
+    }
+
+    private var color: Color {
+        switch status {
+        case .enabled: .green
+        case .requiresApproval: .orange
+        case .notRegistered, .unknown: .secondary
+        case .notFound: .red
+        }
+    }
 }
