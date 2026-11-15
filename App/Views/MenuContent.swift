@@ -182,7 +182,7 @@ private struct LeaseRow: View {
 
     private var status: String {
         let state = lease.isBusy ? "busy" : "waiting on you"
-        return "\(state) · \(Self.compact(now.timeIntervalSince(lease.grantedAt)))"
+        return "\(state) · \(Self.compact(now.timeIntervalSince(lease.activitySince)))"
     }
 
     /// "now", "9m", "1h 5m".
