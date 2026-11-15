@@ -1,5 +1,6 @@
 #include "Shared.xcconfig"
 
 CODE_SIGN_IDENTITY = Apple Development
+OHMAI_CONFIG_CONDITIONS = DEBUG
 
 #include? "Local.xcconfig"
