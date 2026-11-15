@@ -7,7 +7,6 @@ import SwiftUI
 /// where last month stood on the same day.
 struct UsageSection: View {
     let usage: UsageModel
-    @State private var explaining = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -35,27 +34,9 @@ struct UsageSection: View {
     }
 
     private func label(_ c: MonthComparison?) -> some View {
-        HStack {
-            Text(c.map { "\(Self.monthName($0.today)) so far" } ?? "Usage")
-                .font(.callout.weight(.medium))
-                .foregroundStyle(.secondary)
-            Spacer()
-            if let c {
-                Button { explaining.toggle() } label: {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.borderless)
-                .accessibilityLabel("How usage is calculated")
-                .popover(isPresented: $explaining, arrowEdge: .trailing) {
-                    Text(Self.explanation(c))
-                        .font(.callout)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(width: 260, alignment: .leading)
-                        .padding(14)
-                }
-            }
-        }
+        Text(c.map { "\(Self.monthName($0.today)) so far" } ?? "Usage")
+            .font(.callout.weight(.medium))
+            .foregroundStyle(.secondary)
     }
 
     private func hero(_ c: MonthComparison) -> some View {
@@ -70,15 +51,19 @@ struct UsageSection: View {
                         .contentTransition(.numericText())
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
+                        .layoutPriority(1)
                     if c.total.basis == .cost {
+                        // The explanation lives on hover; no extra control in the menu.
                         Text("est.")
                             .font(.callout)
                             .foregroundStyle(.secondary)
+                            .help(Self.explanation(c))
                     }
                 }
                 Spacer(minLength: 8)
-                DailySparkline(values: c.daily, today: c.today.day, month: c.today, basis: c.total.basis)
-                    .frame(width: 112, height: 30)
+                DailySparkline(values: c.daily, lastMonth: c.lastMonthDaily, today: c.today.day, month: c.today, basis: c.total.basis)
+                    .frame(minWidth: 84, maxWidth: 124)
+                    .frame(height: 38)
                     .padding(.bottom, 6)
             }
             context(c)
@@ -109,7 +94,8 @@ struct UsageSection: View {
     static func explanation(_ c: MonthComparison) -> String {
         var lines = [
             "Estimated cost at API list prices: what this usage would cost on the API, not a bill.",
-            "Each bar's track is last month's total; the fill is this month so far; the tick marks the same day last month.",
+            "Bars: the solid fill is this month so far, the light bar behind it is last month's total, and the tick marks where last month stood on the same day.",
+            "Daily chart: this month's days over a soft area for last month's, day by day.",
             "Models without a known price are counted in tokens and left out of the dollar total.",
         ]
         if c.partialHistory {
@@ -124,40 +110,60 @@ struct UsageSection: View {
     }
 }
 
-/// One column per day of the month: past days drawn, today emphasized, future days as faint
-/// placeholders, so it also shows how far into the month you are. Hover a column for its value.
+/// One column per day of this month, over a soft area showing last month's days (aligned by
+/// day of month, same scale). Past days are drawn, today is full strength, future days are
+/// faint placeholders. Hover a column for both days' values.
 private struct DailySparkline: View {
     let values: [Double]
+    let lastMonth: [Double]
     let today: Int
     let month: DayKey
     let basis: MonthComparison.Row.Basis
 
     var body: some View {
-        let peak = max(values.max() ?? 0, .leastNonzeroMagnitude)
-        HStack(alignment: .bottom, spacing: 1.5) {
-            ForEach(Array(values.enumerated()), id: \.offset) { index, value in
-                let day = index + 1
-                let past = day <= today
-                RoundedRectangle(cornerRadius: 1, style: .continuous)
-                    .fill(fill(day: day, past: past))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: past ? max(2, 30 * value / peak) : 2)
-                    .help(past ? "\(label(day)): \(amount(value))" : "")
+        let ghost = (0..<values.count).map { $0 < lastMonth.count ? lastMonth[$0] : 0 }
+        let peak = max(values.max() ?? 0, ghost.max() ?? 0, .leastNonzeroMagnitude)
+        GeometryReader { geo in
+            let slot = geo.size.width / CGFloat(values.count)
+            let h = geo.size.height
+            ZStack(alignment: .bottomLeading) {
+                // Last month: a filled area through the day centers.
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: h))
+                    for (i, v) in ghost.enumerated() {
+                        path.addLine(to: CGPoint(x: slot * (CGFloat(i) + 0.5), y: h - h * v / peak))
+                    }
+                    path.addLine(to: CGPoint(x: geo.size.width, y: h))
+                    path.closeSubpath()
+                }
+                .fill(.primary.opacity(0.13))
+
+                HStack(alignment: .bottom, spacing: 1.5) {
+                    ForEach(Array(values.enumerated()), id: \.offset) { index, value in
+                        let day = index + 1
+                        let past = day <= today
+                        RoundedRectangle(cornerRadius: 1, style: .continuous)
+                            .fill(fill(day: day, past: past))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: past ? max(2, h * value / peak) : 2)
+                            .contentShape(Rectangle())
+                            .help(past ? tooltip(day: day, value: value, ghost: ghost[index]) : "")
+                    }
+                }
             }
         }
-        .frame(maxHeight: .infinity, alignment: .bottom)
         .accessibilityElement()
-        .accessibilityLabel("Daily usage this month, \(today) of \(values.count) days so far")
+        .accessibilityLabel("Daily usage this month, \(today) of \(values.count) days so far, over last month")
     }
 
     private func fill(day: Int, past: Bool) -> some ShapeStyle {
-        if !past { return AnyShapeStyle(.quaternary) }
-        return day == today ? AnyShapeStyle(.primary) : AnyShapeStyle(.primary.opacity(0.45))
+        if !past { return AnyShapeStyle(.primary.opacity(0.15)) }
+        return day == today ? AnyShapeStyle(.primary) : AnyShapeStyle(.primary.opacity(0.75))
     }
 
-    private func label(_ day: Int) -> String {
+    private func tooltip(day: Int, value: Double, ghost: Double) -> String {
         let date = Calendar.current.date(from: DateComponents(year: month.year, month: month.month, day: day)) ?? .now
-        return date.formatted(.dateTime.month(.abbreviated).day())
+        return "\(date.formatted(.dateTime.month(.abbreviated).day())): \(amount(value))\nSame day last month: \(amount(ghost))"
     }
 
     private func amount(_ v: Double) -> String {
@@ -165,7 +171,9 @@ private struct DailySparkline: View {
     }
 }
 
-/// Name, figure, and a meter: fill = this month, track = last month, tick = same day.
+/// Name, figure, and a bullet bar on one shared scale: the solid fill is this month, the
+/// light bar behind it is last month's total, and the tick is where last month stood on the
+/// same day. Whichever is larger spans the full width, so the bar always says something.
 private struct AgentMeter: View {
     let row: MonthComparison.Row
     let lastMonth: String
@@ -188,15 +196,21 @@ private struct AgentMeter: View {
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
-            if let progress = row.progress {
-                Meter(progress: progress, mark: partial ? nil : row.sameDaysMark, tint: row.agent?.color ?? .accentColor)
+            if row.lastMonthTotal.tokens > 0 {
+                BulletBar(
+                    current: value(row.thisMonth),
+                    reference: value(row.lastMonthTotal),
+                    mark: partial ? nil : value(row.lastMonthSameDays),
+                    tint: row.agent?.color ?? .accentColor)
             }
         }
         .contentShape(Rectangle())
         .help(details)
     }
 
-    /// "of $2,905" while under last month, "2.1× Oct" once past it, "new" with no history.
+    private func value(_ t: UsageTotals) -> Double { row.basis == .cost ? t.cost : Double(t.tokens) }
+
+    /// "of $2,905 in Oct" under last month, "2.1× Oct" past it, "new" with no history.
     private var trailing: String {
         guard row.lastMonthTotal.tokens > 0, let progress = row.progress else { return "new" }
         if progress > 1 { return Format.multiple(progress) + " \(lastMonth.prefix(3))" }
@@ -206,8 +220,8 @@ private struct AgentMeter: View {
     private var details: String {
         var lines = ["\(Format.tokens(row.thisMonth.tokens)) tokens this month"]
         if row.lastMonthTotal.tokens > 0 {
-            lines.append("Same days in \(lastMonth): \(Format.tokens(row.lastMonthSameDays.tokens)) tokens, \(Format.dollars(row.lastMonthSameDays.cost))")
-            lines.append("All of \(lastMonth): \(Format.tokens(row.lastMonthTotal.tokens)) tokens, \(Format.dollars(row.lastMonthTotal.cost))")
+            lines.append("Light bar: all of \(lastMonth), \(Format.dollars(row.lastMonthTotal.cost)) (\(Format.tokens(row.lastMonthTotal.tokens)) tokens)")
+            lines.append("Same days in \(lastMonth): \(Format.dollars(row.lastMonthSameDays.cost)) (\(Format.tokens(row.lastMonthSameDays.tokens)) tokens)")
         }
         if !row.thisMonth.fullyPriced {
             lines.append("\(Format.tokens(row.thisMonth.unpricedTokens)) tokens from models without a known price")
@@ -216,34 +230,38 @@ private struct AgentMeter: View {
     }
 }
 
-/// A thin meter. Past 100% it stays full and the figure says by how much: the track is a
-/// reference, not a limit, so "over" isn't drawn as an alarm.
-private struct Meter: View {
-    let progress: Double
+/// Current vs reference on one scale (the larger spans the width).
+private struct BulletBar: View {
+    let current: Double
+    let reference: Double
     let mark: Double?
     let tint: Color
 
     var body: some View {
+        let scale = max(current, reference, .leastNonzeroMagnitude)
         GeometryReader { geo in
             let w = geo.size.width
             ZStack(alignment: .leading) {
-                Capsule().fill(.quaternary)
+                Capsule().fill(.primary.opacity(0.06))
+                Capsule()
+                    .fill(tint.opacity(0.28))
+                    .frame(width: max(6, w * reference / scale))
                 Capsule()
                     .fill(tint)
-                    .frame(width: max(6, w * min(progress, 1)))
-                if let mark, mark > 0, mark < 1 {
+                    .frame(width: max(6, w * current / scale), height: 6)
+                if let mark, mark > 0 {
                     Capsule()
-                        .fill(.primary.opacity(0.6))
-                        .frame(width: 2, height: 12)
-                        .offset(x: w * mark - 1)
+                        .fill(.primary.opacity(0.7))
+                        .frame(width: 2, height: 14)
+                        .offset(x: min(w - 2, w * mark / scale - 1))
                 }
             }
-            .frame(height: 6)
+            .frame(height: 10)
             .frame(maxHeight: .infinity)
         }
-        .frame(height: 12)
+        .frame(height: 14)
         .accessibilityElement()
-        .accessibilityLabel("\(Int(progress * 100)) percent of last month")
+        .accessibilityLabel("This month \(Int(100 * current / max(reference, .leastNonzeroMagnitude))) percent of last month")
     }
 }
 

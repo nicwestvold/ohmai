@@ -89,6 +89,9 @@ public struct MonthComparison: Sendable, Equatable {
     /// This month's total per day, index 0 = the 1st, one entry per day of the month (days
     /// after today are 0). On the total row's basis: dollars, or tokens if nothing is priced.
     public let daily: [Double]
+    /// Last month's total per day (index 0 = the 1st), same basis, for a reference series
+    /// drawn behind `daily`, aligned by day of month.
+    public let lastMonthDaily: [Double]
     /// The ledger doesn't reach back to the start of last month, so comparisons are partial.
     public let partialHistory: Bool
 
@@ -122,13 +125,20 @@ public struct MonthComparison: Sendable, Equatable {
         let sum = { (pick: (Row) -> UsageTotals) in rows.map(pick).reduce(UsageTotals(), +) }
         let total = row(agent: nil, this: sum(\.thisMonth), same: sum(\.lastMonthSameDays), full: sum(\.lastMonthTotal), lenient: true)
 
+        let measure = { (t: UsageTotals) in total.basis == .cost ? t.cost : Double(t.tokens) }
         var daily = [Double](repeating: 0, count: today.daysInMonth(calendar: calendar))
-        for d in daily_input where d.day.sameMonth(as: today) && d.day.day <= today.day {
-            daily[d.day.day - 1] += total.basis == .cost ? d.totals.cost : Double(d.totals.tokens)
+        var lastMonthDaily = [Double](repeating: 0, count: lastMonthDays)
+        for d in daily_input {
+            if d.day.sameMonth(as: today), d.day.day <= today.day {
+                daily[d.day.day - 1] += measure(d.totals)
+            } else if d.day.sameMonth(as: lastMonth) {
+                lastMonthDaily[d.day.day - 1] += measure(d.totals)
+            }
         }
 
         return MonthComparison(
             today: today, lastMonth: lastMonth, rows: rows, total: total, daily: daily,
+            lastMonthDaily: lastMonthDaily,
             partialHistory: historyStart.map { $0 > lastMonth } ?? true)
     }
 

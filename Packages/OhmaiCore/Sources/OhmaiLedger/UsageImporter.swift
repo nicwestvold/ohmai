@@ -45,7 +45,9 @@ public actor UsageImporter {
             .appending(path: "Library/Application Support/ohmai/ledger.sqlite")
     }
 
-    static let chunkSize = 4 << 20
+    /// 1 MB: big enough to be fast, small enough that the allocator's cache of freed
+    /// large blocks (which it keeps for reuse) stays small in a long-running app.
+    static let chunkSize = 1 << 20
     /// Commit at least this often, so a long first import is resumable and memory stays flat.
     static let commitEvery = 16 << 20
 

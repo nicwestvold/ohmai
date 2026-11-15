@@ -168,6 +168,9 @@ struct MonthComparisonTests {
         #expect(c.daily[13] == 20)
         #expect(c.daily[14...].allSatisfy { $0 == 0 })
         #expect(c.daily.reduce(0, +) == c.total.thisMonth.cost)
+        #expect(c.lastMonthDaily.count == 31)     // October
+        #expect(c.lastMonthDaily[13] == 99)
+        #expect(c.lastMonthDaily.reduce(0, +) == c.total.lastMonthTotal.cost)
     }
 
     @Test func futureDaysThisMonthAreIgnored() {
