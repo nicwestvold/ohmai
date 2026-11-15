@@ -26,6 +26,7 @@ final class AppModel {
     let lidRegistration: LidHelperRegistration
     let lidSession: LidSession
     let usage = UsageModel()
+    let launchAtLogin = LaunchAtLogin()
 
     private(set) var leaseBook = LeaseBook()
     private(set) var decision: Decision = .allowSleep(.noLeases)
@@ -100,6 +101,7 @@ final class AppModel {
         codex.start()
         pi.start()
         usage.start()
+        launchAtLogin.applyDefaultIfNeeded()
         reevaluate()
         #if DEBUG
         Snapshots.runIfRequested(model: self)

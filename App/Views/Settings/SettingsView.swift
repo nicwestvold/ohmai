@@ -73,6 +73,23 @@ struct GeneralTab: View {
             }
 
             Section {
+                Toggle(isOn: launchAtLogin) {
+                    Text("Open ohmai at login")
+                    Footnote("ohmai keeps its own copy of your usage history, which only grows while it's running.")
+                }
+                if model.launchAtLogin.needsApproval {
+                    HStack {
+                        Footnote("macOS needs your OK in Login Items.")
+                        Spacer()
+                        Button("Open Login Items…") { model.launchAtLogin.openLoginItems() }
+                    }
+                }
+                if let error = model.launchAtLogin.lastError {
+                    Text(error).font(.callout).foregroundStyle(.red)
+                }
+            }
+
+            Section {
                 Toggle(isOn: automaticChecks) {
                     Text("Check for updates automatically")
                     if !model.updater.canCheckForUpdates {
@@ -91,7 +108,14 @@ struct GeneralTab: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .onAppear { footprint = .current() }
+        .onAppear {
+            footprint = .current()
+            model.launchAtLogin.refresh()
+        }
+    }
+
+    private var launchAtLogin: Binding<Bool> {
+        Binding(get: { model.launchAtLogin.enabled }, set: { model.launchAtLogin.set($0) })
     }
 
     private var automaticChecks: Binding<Bool> {
