@@ -2,7 +2,7 @@
 """Generates ohmai's Ω face artwork from one set of path definitions.
 
 Source of truth: the "Ω face: personality" design (24-unit grid). Outputs, all committed:
-  App/AppIcon.icon/Assets/face.png          app icon layer (recolored per appearance by icon.json)
+  App/AppIcon.icon/Assets/face.png          app icon layer (icon.json paints it amber on ink)
   App/Assets.xcassets/Face-*.imageset       vector PDF template images for the menu bar and header
 
 Needs rsvg-convert (brew install librsvg). Run from the repo root: scripts/make-icons.py

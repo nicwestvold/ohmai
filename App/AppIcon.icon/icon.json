@@ -1,17 +1,4 @@
 {
-  "fill-specializations": [
-    {
-      "value": {
-        "solid": "srgb:0.96471,0.94510,0.90588,1.00000"
-      }
-    },
-    {
-      "appearance": "dark",
-      "value": {
-        "solid": "srgb:0.10980,0.10980,0.13333,1.00000"
-      }
-    }
-  ],
   "groups": [
     {
       "layers": [
@@ -19,19 +6,9 @@
           "name": "face",
           "image-name": "face.png",
           "glass": false,
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.10980,0.10980,0.13333,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.95294,0.75294,0.30980,1.00000"
-              }
-            }
-          ]
+          "fill": {
+            "solid": "srgb:0.95294,0.75294,0.30980,1.00000"
+          }
         }
       ],
       "shadow": {
@@ -47,5 +24,8 @@
   ],
   "supported-platforms": {
     "squares": "shared"
+  },
+  "fill": {
+    "solid": "srgb:0.10980,0.10980,0.13333,1.00000"
   }
 }
