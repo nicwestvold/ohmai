@@ -82,6 +82,7 @@ public struct StatusRecordScanner: Sendable {
     ) -> Result {
         var result = Result()
         var projects: [SessionKey: String] = [:]
+        var since: [SessionKey: Date] = [:]
 
         for record in records {
             let key = record.key
@@ -113,10 +114,11 @@ public struct StatusRecordScanner: Sendable {
             if let existing = result.live[key], Self.rank(existing) >= Self.rank(activity) { continue }
             result.live[key] = activity
             projects[key] = record.cwd
+            since[key] = record.statusUpdatedAt
         }
 
         for (key, activity) in result.live.sorted(by: { $0.key.sessionId < $1.key.sessionId }) {
-            result.events.append(ActivityEvent(session: key, activity: activity, at: now, project: projects[key]))
+            result.events.append(ActivityEvent(session: key, activity: activity, at: now, project: projects[key], since: since[key]))
         }
         for key in previous.keys.sorted(by: { $0.sessionId < $1.sessionId }) where result.live[key] == nil {
             result.events.append(ActivityEvent(session: key, activity: .gone, at: now))

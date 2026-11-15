@@ -16,13 +16,19 @@ public struct Lease: Sendable, Equatable {
     public let grantedAt: Date
     public var lastSignalAt: Date
     public var project: String?
+    /// When the session entered its current activity. For display ("busy · 9m").
+    public var activitySince: Date
 
-    public init(session: SessionKey, kind: Kind, grantedAt: Date, lastSignalAt: Date, project: String? = nil) {
+    public init(
+        session: SessionKey, kind: Kind, grantedAt: Date, lastSignalAt: Date,
+        project: String? = nil, activitySince: Date? = nil
+    ) {
         self.session = session
         self.kind = kind
         self.grantedAt = grantedAt
         self.lastSignalAt = lastSignalAt
         self.project = project
+        self.activitySince = activitySince ?? grantedAt
     }
 
     public var isBusy: Bool { kind == .busy }
@@ -58,8 +64,12 @@ public struct LeaseBook: Sendable, Equatable {
     /// Applies an event. Timestamps in the future are clamped to `now`, so a skewed clock
     /// can't stretch a lease. `idle` and `gone` always release, even if out of order:
     /// when in doubt, release.
+    ///
+    /// The agent-reported `since` is clamped to `at` and only ever moves the waiting cap's
+    /// start *earlier*, so it can shorten a waiting lease but never extend one.
     public mutating func apply(_ event: ActivityEvent, now: Date) {
         let at = min(event.at, now)
+        let since = min(event.since ?? at, at)
         let key = event.session
 
         switch event.activity {
@@ -68,8 +78,10 @@ public struct LeaseBook: Sendable, Equatable {
 
         case .busy, .waiting:
             guard var lease = leasesBySession[key] else {
-                let kind: Lease.Kind = event.activity == .busy ? .busy : .waiting(since: at)
-                leasesBySession[key] = Lease(session: key, kind: kind, grantedAt: at, lastSignalAt: at, project: event.project)
+                let kind: Lease.Kind = event.activity == .busy ? .busy : .waiting(since: since)
+                leasesBySession[key] = Lease(
+                    session: key, kind: kind, grantedAt: at, lastSignalAt: at,
+                    project: event.project, activitySince: since)
                 return
             }
             // Ignore stale, out-of-order signals.
@@ -77,12 +89,19 @@ public struct LeaseBook: Sendable, Equatable {
             lease.lastSignalAt = at
             if let project = event.project { lease.project = project }
             switch (lease.kind, event.activity) {
-            case (.waiting, .waiting):
-                break  // keep the original `since`: the cap counts from when waiting started
+            case (.waiting(let started), .waiting):
+                // The cap counts from when waiting started: keep the earliest known start.
+                let first = min(started, since)
+                lease.kind = .waiting(since: first)
+                lease.activitySince = first
             case (_, .waiting):
-                lease.kind = .waiting(since: at)
+                lease.kind = .waiting(since: since)
+                lease.activitySince = since
+            case (.busy, .busy):
+                if event.since != nil { lease.activitySince = since }
             default:
                 lease.kind = .busy
+                lease.activitySince = since
             }
             leasesBySession[key] = lease
         }

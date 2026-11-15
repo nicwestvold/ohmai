@@ -172,3 +172,54 @@ struct LeaseProjectTests {
         #expect(book.leases[0].project == "/b")
     }
 }
+
+@Suite("LeaseBook activity start")
+struct LeaseActivitySinceTests {
+    private func ev(_ a: Activity, at: Date, since: Date?) -> ActivityEvent {
+        ActivityEvent(session: key(), activity: a, at: at, since: since)
+    }
+
+    @Test func agentReportedStartSurvivesARestart() {
+        var book = LeaseBook()
+        // ohmai starts now; Claude says it's been busy for 40 minutes.
+        book.apply(ev(.busy, at: t0.plus(minutes: 40), since: t0), now: t0.plus(minutes: 40))
+        #expect(book.leases[0].activitySince == t0)
+        #expect(book.leases[0].grantedAt == t0.plus(minutes: 40))
+    }
+
+    @Test func withoutAStartFallsBackToFirstSeen() {
+        var book = LeaseBook()
+        book.apply(ev(.busy, at: t0, since: nil), now: t0)
+        #expect(book.leases[0].activitySince == t0)
+    }
+
+    @Test func futureStartIsClamped() {
+        var book = LeaseBook()
+        book.apply(ev(.busy, at: t0, since: t0.plus(minutes: 5)), now: t0)
+        #expect(book.leases[0].activitySince == t0)
+    }
+
+    @Test func waitingCapCountsFromTheReportedStart() {
+        var book = LeaseBook()
+        // Waiting since 50 minutes before ohmai saw it: the 60-minute cap ends 10 minutes later.
+        book.apply(ev(.waiting, at: t0.plus(minutes: 50), since: t0), now: t0.plus(minutes: 50))
+        #expect(book.leases[0].expiresAt(prefs: .default) == t0.plus(minutes: 60))
+    }
+
+    @Test func reportedStartCanOnlyShortenTheWaitingCap() {
+        var book = LeaseBook()
+        book.apply(ev(.waiting, at: t0, since: t0), now: t0)
+        // A later report claims waiting started later: ignored for the cap.
+        book.apply(ev(.waiting, at: t0.plus(minutes: 5), since: t0.plus(minutes: 4)), now: t0.plus(minutes: 5))
+        #expect(book.leases[0].kind == .waiting(since: t0))
+    }
+
+    @Test func changingActivityResetsTheStart() {
+        var book = LeaseBook()
+        book.apply(ev(.busy, at: t0, since: t0), now: t0)
+        book.apply(ev(.waiting, at: t0.plus(minutes: 9), since: t0.plus(minutes: 8)), now: t0.plus(minutes: 9))
+        #expect(book.leases[0].activitySince == t0.plus(minutes: 8))
+        book.apply(ev(.busy, at: t0.plus(minutes: 12), since: t0.plus(minutes: 11)), now: t0.plus(minutes: 12))
+        #expect(book.leases[0].activitySince == t0.plus(minutes: 11))
+    }
+}

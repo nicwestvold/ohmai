@@ -84,7 +84,8 @@ public enum CodexActivityRule {
             if liveness[path] == .dead { continue }
             let key = key(for: path, rollout: entry.rollout)
             guard live.insert(key).inserted else { continue }
-            events.append(ActivityEvent(session: key, activity: .busy, at: now, project: entry.rollout.cwd))
+            events.append(ActivityEvent(
+                session: key, activity: .busy, at: now, project: entry.rollout.cwd, since: entry.rollout.turnStartedAt))
         }
         for key in previous.sorted(by: { $0.sessionId < $1.sessionId }) where !live.contains(key) {
             events.append(ActivityEvent(session: key, activity: .gone, at: now))

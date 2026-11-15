@@ -120,7 +120,10 @@ struct ClaudeSessionScannerTests {
     @Test(arguments: [("busy", Activity.busy), ("waiting", .waiting), ("idle", .idle)])
     func emitsActivityForLiveSession(_ name: String, _ activity: Activity) throws {
         let result = scanner(alive).scan(files: [try fixture(name)], previous: [:], now: now)
-        #expect(result.events == [ActivityEvent(session: key, activity: activity, at: now, project: "/Users/example/projects/demo")])
+        // `since` is the fixture's statusUpdatedAt: durations survive an ohmai restart.
+        #expect(result.events == [ActivityEvent(
+            session: key, activity: activity, at: now, project: "/Users/example/projects/demo",
+            since: Date(timeIntervalSince1970: 1_794_702_374.093))])
         #expect(result.live == [key: activity])
     }
 

@@ -67,7 +67,9 @@ struct PiStatusFileTests {
 @Suite("pi through StatusRecordScanner")
 struct PiScanTests {
     @Test func busyKeepsAwake() throws {
-        #expect(try scan(["busy"]).events == [ActivityEvent(session: key, activity: .busy, at: now, project: "/Users/example/demo")])
+        #expect(try scan(["busy"]).events == [ActivityEvent(
+            session: key, activity: .busy, at: now, project: "/Users/example/demo",
+            since: Date(timeIntervalSince1970: 1_794_702_374))])
     }
 
     @Test func waitingAndIdle() throws {

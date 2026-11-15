@@ -44,11 +44,15 @@ public struct ActivityEvent: Sendable, Equatable {
     public let at: Date
     /// The session's working directory. Metadata only, shown in the dropdown.
     public let project: String?
+    /// When the session entered this activity, per the agent's own records (e.g. Claude's
+    /// `statusUpdatedAt`). Lets durations survive an ohmai restart. Nil if unknown.
+    public let since: Date?
 
-    public init(session: SessionKey, activity: Activity, at: Date, project: String? = nil) {
+    public init(session: SessionKey, activity: Activity, at: Date, project: String? = nil, since: Date? = nil) {
         self.session = session
         self.activity = activity
         self.at = at
         self.project = project
+        self.since = since
     }
 }

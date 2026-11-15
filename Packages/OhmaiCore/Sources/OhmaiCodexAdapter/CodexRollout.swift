@@ -14,6 +14,8 @@ public struct CodexRollout: Sendable, Equatable {
     public private(set) var cwd: String?
     /// Turns started but not yet completed or aborted. Never negative.
     public private(set) var openTurns = 0
+    /// When the outermost open turn started (its `task_started` line's timestamp).
+    public private(set) var turnStartedAt: Date?
     /// Timestamp of the newest line seen.
     public private(set) var lastEventAt: Date?
     /// Lines whose layout didn't match; logged by the adapter.
@@ -56,6 +58,7 @@ public struct CodexRollout: Sendable, Equatable {
         case ("session_meta", _):
             readSessionMeta(line)
         case ("event_msg", "task_started"):
+            if openTurns == 0 { turnStartedAt = header.timestamp }
             openTurns += 1
         case ("event_msg", "task_complete"), ("event_msg", "turn_aborted"):
             openTurns = max(0, openTurns - 1)

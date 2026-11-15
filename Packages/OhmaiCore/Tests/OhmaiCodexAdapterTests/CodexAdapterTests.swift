@@ -112,7 +112,10 @@ struct CodexActivityRuleTests {
         let result = CodexActivityRule.evaluate(
             tracked: try tracked("open-turn", modified: now), liveness: [path: .alive(pid: 99)],
             previous: [], now: now, quietLimit: 3600)
-        #expect(result.events == [ActivityEvent(session: key, activity: .busy, at: now, project: "/Users/example/projects/demo")])
+        let turnStart = try #require(result.events.first?.since)
+        #expect(abs(turnStart.timeIntervalSince1970 - 1_794_687_078.952) < 0.001)  // the task_started line
+        #expect(result.events == [ActivityEvent(
+            session: key, activity: .busy, at: now, project: "/Users/example/projects/demo", since: turnStart)])
     }
 
     @Test(arguments: [CodexLiveness.alive(pid: 1), .unknown])
