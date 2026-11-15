@@ -8,6 +8,8 @@ Why: while ohmai is private and mostly used by its author, Sparkle's cost (a thi
 
 Moving later: a private repo's release assets can't be fetched without a token (never ship one in the app), so Sparkle needs a public feed. If the repo goes public, its existing releases become downloadable and the appcast can live there. (A separate public `ohmai-releases` repo was considered and deleted; if the source stays private but Sparkle is wanted, that pattern works: a public repo holding only zips and the appcast.)
 
+**Replacing the app by hand (verified 2026-11-14):** the lid helper registered by the previous build keeps running from the previous bundle's path. The new app can still talk to it (the caller check matches team and bundle id), but the root process isn't the shipped code, and deleting the old bundle would break it. Users who use lid-closed mode must toggle it off and on after updating; the README says so. A future improvement: compare the helper's `version` reply with the app's build number at launch and offer to re-register.
+
 Everything below is the plan for when Sparkle is wired.
 
 ## Decisions
