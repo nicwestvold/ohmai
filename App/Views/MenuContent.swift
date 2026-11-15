@@ -4,6 +4,7 @@ import SwiftUI
 struct MenuContent: View {
     let model: AppModel
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -121,11 +122,15 @@ struct MenuContent: View {
     private var footer: some View {
         VStack(spacing: 0) {
             if model.updater.canCheckForUpdates {
-                Button { model.updater.checkForUpdates() } label: {
+                Button {
+                    dismiss()
+                    model.updater.checkForUpdates()
+                } label: {
                     MenuRowLabel(title: "Check for Updates…", systemImage: "arrow.down.circle")
                 }
             }
             Button {
+                dismiss()  // close the dropdown, like a native menu does
                 NSApp.activate()
                 openSettings()
             } label: {
