@@ -31,8 +31,20 @@ let signalSources = [SIGTERM, SIGINT, SIGHUP].map { sig in
     return source
 }
 
-let service = LidService(runtime: runtime, helperVersion: info["CFBundleVersion"] as? String ?? "0")
-let delegate = LidListenerDelegate(service: service, requirement: requirement)
+let runningVersion = info["CFBundleVersion"] as? String ?? "0"
+let executable = Bundle.main.executableURL ?? URL(fileURLWithPath: CommandLine.arguments[0])
+let service = LidService(runtime: runtime, helperVersion: runningVersion)
+let delegate = LidListenerDelegate(
+    service: service, requirement: requirement,
+    staleBinary: { BinaryVersion.isStale(running: runningVersion, onDisk: BinaryVersion.onDisk(executable)) },
+    restart: {
+        // Sleep back on first, then exit cleanly (launchd won't respawn on success; the
+        // app's next request launches the new binary on demand).
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated { runtime.shutdown() }
+            exit(0)
+        }
+    })
 let listener = NSXPCListener(machServiceName: LidHelperXPC.machServiceName)
 listener.delegate = delegate
 listener.resume()

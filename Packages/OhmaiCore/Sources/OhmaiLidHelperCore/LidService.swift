@@ -112,13 +112,30 @@ public final class LidService: NSObject, LidHelperProtocol, Sendable {
 public final class LidListenerDelegate: NSObject, NSXPCListenerDelegate, Sendable {
     private let service: LidService
     private let requirement: String
+    private let staleBinary: @Sendable () -> Bool
+    private let restart: @Sendable () -> Void
 
-    public init(service: LidService, requirement: String) {
+    /// - `staleBinary`: true when the app was updated under us (our file on disk is a newer
+    ///   build than this process). `restart` then turns sleep back on and exits; launchd
+    ///   starts the new binary on the app's next request.
+    public init(
+        service: LidService, requirement: String,
+        staleBinary: @escaping @Sendable () -> Bool = { false },
+        restart: @escaping @Sendable () -> Void = {}
+    ) {
         self.service = service
         self.requirement = requirement
+        self.staleBinary = staleBinary
+        self.restart = restart
     }
 
     public func listener(_ listener: NSXPCListener, shouldAcceptNewConnection connection: NSXPCConnection) -> Bool {
+        // A new connection usually means the app (re)launched, e.g. after an update.
+        if staleBinary() {
+            log.notice("binary on disk is a newer build; restarting so launchd runs it")
+            restart()
+            return false
+        }
         connection.setCodeSigningRequirement(requirement)
         connection.exportedInterface = NSXPCInterface(with: LidHelperProtocol.self)
         connection.exportedObject = service
