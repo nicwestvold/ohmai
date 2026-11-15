@@ -75,6 +75,11 @@ Main components:
 ### Version numbers
 `CFBundleVersion` is a monotonically increasing build number (Sparkle depends on it). Never reuse or decrease it.
 
+### Releases
+- `make release` runs `scripts/release.sh`: archive, Developer ID export, signature checks, notarize, staple, Gatekeeper check, zip. `make release-check` stops before uploading to Apple.
+- Notarization credentials live in the login keychain as the notarytool profile `ohmai-notary` (override with `NOTARY_PROFILE`). Never put credentials in the repo.
+- After a release, tag it `build-<N>` and bump `CURRENT_PROJECT_VERSION`.
+
 ## Layout and build
 
 | Path | What |

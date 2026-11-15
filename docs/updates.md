@@ -77,13 +77,14 @@ Switching between them is just a change to `SUFeedURL`, plus where the release s
 - [ ] Generate the EdDSA key pair with Sparkle's `generate_keys`. The private key goes in the login Keychain plus a CI secret, **backed up**: losing it means existing installs can't verify updates.
 - [ ] Info.plist: `SUFeedURL`, `SUPublicEDKey`, `SUEnableAutomaticChecks = true`, `SUEnableSystemProfiling = false`
 - [ ] Preview builds: a separate scheme or config with the preview `SUFeedURL`. Alternatively, let users pick a channel via `feedURLString(for:)` / allowed channels.
-- [ ] Release script:
-  1. archive
-  2. Developer ID sign (app + helper, hardened runtime)
-  3. notarize + staple
-  4. zip or DMG
-  5. `generate_appcast` (signs entries)
-  6. upload archive + appcast
+- [ ] Release script (`scripts/release.sh`, `make release`; `make release-check` skips the upload):
+  1. [x] archive
+  2. [x] Developer ID sign (app + helper, hardened runtime), verified: team, runtime flag, no `get-task-allow`, helper plist present
+  3. [x] notarize (`notarytool --keychain-profile ohmai-notary`) + staple + Gatekeeper check. First accepted build: 0.1.0 (1), 2026-11-14.
+  4. [x] zip (+ SHA-256)
+  5. [ ] `generate_appcast` (signs entries)
+  6. [ ] upload archive + appcast
+  - It refuses a dirty tree and a build number not above the latest `build-*` tag.
 - [ ] Release notes: HTML or Markdown per version, referenced from the appcast
 - [ ] Test an update: install an old build → publish a new one → confirm the update applies, the app relaunches, and the lid helper re-registers
 - [ ] Optional: a Homebrew cask pointing at the same archives (`auto_updates true`, so brew doesn't fight Sparkle)
