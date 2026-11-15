@@ -1,30 +1,69 @@
+import AppKit
 import SwiftUI
 
-/// Placeholder glyphs until the Ω face artwork exists. The states already differ in shape,
-/// as the design requires; swap these for template images of the face later.
+/// The Ω face in the menu bar: four glanceable states, drawn as template images so macOS
+/// tints them for light and dark menu bars. Artwork: scripts/make-icons.py.
 struct MenuBarIcon: View {
     let state: MenuBarIconState
 
     var body: some View {
-        Image(systemName: symbol)
-            .accessibilityLabel(label)
+        Image(nsImage: Self.image(state.assetName))
+            .accessibilityLabel(state.label)
     }
 
-    private var symbol: String {
-        switch state {
-        case .asleep: "moon.zzz"
-        case .working: "bolt.fill"
-        case .waiting: "bolt.badge.clock.fill"
-        case .shades: "eyeglasses"
+    /// Menu bar labels ignore SwiftUI sizing, so size the NSImage itself.
+    static func image(_ name: String, points: CGFloat = 18) -> NSImage {
+        guard let source = NSImage(named: name), let image = source.copy() as? NSImage else { return NSImage() }
+        image.size = NSSize(width: points, height: points)
+        image.isTemplate = true
+        return image
+    }
+}
+
+extension MenuBarIconState {
+    var assetName: String {
+        switch self {
+        case .asleep: "Face-asleep"
+        case .working: "Face-working"
+        case .waiting: "Face-waiting"
+        case .shades: "Face-shades"
         }
     }
 
-    private var label: String {
-        switch state {
+    var label: String {
+        switch self {
         case .asleep: "ohmai: no agents running"
         case .working: "ohmai: agent working"
         case .waiting: "ohmai: agent waiting on you"
-        case .shades: "ohmai: keeping Mac awake with the lid closed"
+        case .shades: "ohmai: working with the lid closed"
         }
+    }
+}
+
+/// The dropdown header's fuller set of expressions.
+enum HeaderFace: Equatable {
+    case asleep, focused, oh, shades, drowsy
+
+    var assetName: String {
+        switch self {
+        case .asleep: "Face-header-asleep"
+        case .focused: "Face-header-focused"
+        case .oh: "Face-header-oh"
+        case .shades: "Face-shades"
+        case .drowsy: "Face-header-drowsy"
+        }
+    }
+}
+
+struct HeaderFaceView: View {
+    let face: HeaderFace
+
+    var body: some View {
+        Image(face.assetName)
+            .renderingMode(.template)
+            .resizable()
+            .interpolation(.high)
+            .frame(width: 30, height: 30)
+            .accessibilityHidden(true)
     }
 }

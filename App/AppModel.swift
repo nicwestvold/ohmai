@@ -154,6 +154,15 @@ final class AppModel {
         return .asleep
     }
 
+    var headerFace: HeaderFace {
+        if lidSession.isEngaged { return .shades }
+        let leases = leaseBook.leases
+        guard !leases.isEmpty else { return .asleep }
+        if case .allowSleep(let reason) = decision, reason.overridesAgents { return .drowsy }
+        if leases.contains(where: { !$0.isBusy }) { return .oh }
+        return .focused
+    }
+
     /// Entry point for adapters. One reevaluation per batch.
     func handle(_ events: [ActivityEvent]) {
         let now = Date.now

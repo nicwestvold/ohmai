@@ -53,9 +53,7 @@ struct MenuContent: View {
 
     private var header: some View {
         HStack(alignment: .center, spacing: 10) {
-            MenuBarIcon(state: model.iconState)
-                .font(.title2)
-                .frame(width: 28)
+            HeaderFaceView(face: model.headerFace)
                 .foregroundStyle(model.decision.keepsAwake ? Color.accentColor : .secondary)
             VStack(alignment: .leading, spacing: 2) {
                 Text(model.decision.headline)
