@@ -36,25 +36,32 @@ public final class ProcessExitWatcher {
     }
 }
 
-/// FSEvents on one directory tree, coalesced by `latency`.
+/// FSEvents on one directory tree, coalesced by `latency`. Reports the changed file paths.
 @MainActor
 public final class DirectoryWatcher {
     private var stream: FSEventStreamRef?
-    private let onChange: @MainActor () -> Void
+    private let onChange: @MainActor ([String]) -> Void
 
     /// Returns nil if the stream couldn't be created (e.g. the path doesn't exist).
-    public init?(path: String, latency: TimeInterval, onChange: @escaping @MainActor () -> Void) {
+    public convenience init?(path: String, latency: TimeInterval, onChange: @escaping @MainActor () -> Void) {
+        self.init(path: path, latency: latency, onPaths: { _ in onChange() })
+    }
+
+    public init?(path: String, latency: TimeInterval, onPaths: @escaping @MainActor ([String]) -> Void) {
+        let onChange = onPaths
         self.onChange = onChange
         var context = FSEventStreamContext(
             version: 0, info: nil, retain: nil, release: nil, copyDescription: nil)
-        let callback: FSEventStreamCallback = { _, info, _, _, _, _ in
+        let callback: FSEventStreamCallback = { _, info, _, eventPaths, _, _ in
             guard let info else { return }
             let watcher = Unmanaged<DirectoryWatcher>.fromOpaque(info).takeUnretainedValue()
-            MainActor.assumeIsolated { watcher.onChange() }
+            let paths = unsafeBitCast(eventPaths, to: NSArray.self) as? [String] ?? []
+            MainActor.assumeIsolated { watcher.onChange(paths) }
         }
         guard FileManager.default.fileExists(atPath: path) else { return nil }
         context.info = Unmanaged.passUnretained(self).toOpaque()
-        let flags = FSEventStreamCreateFlags(kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagNoDefer)
+        let flags = FSEventStreamCreateFlags(
+            kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagNoDefer | kFSEventStreamCreateFlagUseCFTypes)
         guard let stream = FSEventStreamCreate(
             nil, callback, &context, [path] as CFArray,
             FSEventStreamEventId(kFSEventStreamEventIdSinceNow), latency, flags)
