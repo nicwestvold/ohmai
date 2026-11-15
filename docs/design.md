@@ -257,7 +257,7 @@ ohmai's Settings → Integrations page installs and checks each one:
 |---|---|---|
 | Claude Code | Nothing required (watches `~/.claude/sessions/`). No hooks plugin in v1: the sessions file, pid liveness and the quiet limit cover what hooks would. Statusline wrapper (later, for limits) that chains the existing command | Never overwrite the user's statusline; wrap it |
 | Codex | Nothing required (watches rollouts). Optional `~/.codex/hooks.json` for approval-waiting | Hooks must be approved once in Codex; unapproved hooks fail silently, so Settings shows whether hook events have actually arrived |
-| pi | `~/.pi/agent/extensions/ohmai.ts` | — |
+| pi | `~/.pi/agent/extensions/ohmai.ts`, written only when you click Install in Settings → Agents. Update and Remove are there too; ohmai never overwrites or removes a file that isn't its own. | pi loads it on next start or `/reload` |
 
 ## Performance budget
 

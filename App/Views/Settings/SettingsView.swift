@@ -1,4 +1,5 @@
 import OhmaiCore
+import OhmaiPiAdapter
 import SwiftUI
 
 /// Native tabbed Settings: one short page per concern instead of one long form.
@@ -155,6 +156,9 @@ struct PowerTab: View {
 
 struct AgentsTab: View {
     let model: AppModel
+    @State private var piStatus: PiExtensionInstaller.Status = .notInstalled
+    @State private var piError: String?
+    private let installer = PiExtensionInstaller()
 
     var body: some View {
         SettingsPage {
@@ -166,11 +170,44 @@ struct AgentsTab: View {
                     name: "Codex", detail: "Watches ~/.codex/sessions. Nothing to install.",
                     found: exists(".codex/sessions"), running: running(.codex))
                 AgentRow(
-                    name: "pi", detail: "Needs a small extension. Coming soon.",
-                    found: nil, running: running(.pi))
+                    name: "pi", detail: piDetail,
+                    found: piStatus == .piNotFound ? false : (piStatus == .installed ? true : nil),
+                    running: running(.pi))
+                if piStatus != .piNotFound {
+                    PiExtensionControls(status: piStatus, error: piError, install: installPi, remove: removePi)
+                }
             } footer: {
                 Footnote("ohmai only reads session status and file timestamps here. It never reads your prompts or code to decide.")
             }
+        }
+        .onAppear { piStatus = installer.status() }
+    }
+
+    private var piDetail: String {
+        switch piStatus {
+        case .piNotFound: "Not found in ~/.pi."
+        case .notInstalled: "Needs a small extension that tells ohmai when pi is busy."
+        case .installed: "Extension installed in ~/.pi/agent/extensions. Restart pi or run /reload to load changes."
+        case .outdated: "The installed extension is out of date."
+        }
+    }
+
+    private func installPi() {
+        do { try installer.install(); piError = nil } catch { piError = Self.describe(error) }
+        piStatus = installer.status()
+    }
+
+    private func removePi() {
+        do { try installer.uninstall(); piError = nil } catch { piError = Self.describe(error) }
+        piStatus = installer.status()
+    }
+
+    private static func describe(_ error: Error) -> String {
+        switch error as? PiExtensionInstaller.Failure {
+        case .notOurs?: "~/.pi/agent/extensions/ohmai.ts exists and isn't ohmai's. Leaving it alone."
+        case .piNotFound?: "pi isn't installed."
+        case .bundledExtensionMissing?: "This build is missing the extension."
+        case nil: error.localizedDescription
         }
     }
 
@@ -181,6 +218,30 @@ struct AgentsTab: View {
 
     private func running(_ agent: OhmaiCore.Agent) -> Int {
         model.leaseBook.leases.filter { $0.session.agent == agent }.count
+    }
+}
+
+private struct PiExtensionControls: View {
+    let status: PiExtensionInstaller.Status
+    let error: String?
+    let install: () -> Void
+    let remove: () -> Void
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 6) {
+            HStack {
+                Spacer()
+                switch status {
+                case .notInstalled: Button("Install Extension", action: install)
+                case .outdated: Button("Update Extension", action: install)
+                case .installed: Button("Remove Extension", role: .destructive, action: remove)
+                case .piNotFound: EmptyView()
+                }
+            }
+            if let error {
+                Text(error).font(.callout).foregroundStyle(.red)
+            }
+        }
     }
 }
 

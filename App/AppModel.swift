@@ -4,6 +4,7 @@ import Observation
 import OhmaiAdapterSupport
 import OhmaiClaudeAdapter
 import OhmaiCodexAdapter
+import OhmaiPiAdapter
 import OhmaiCore
 import OhmaiPower
 
@@ -32,6 +33,7 @@ final class AppModel {
     @ObservationIgnored private let assertions: AssertionManager
     @ObservationIgnored private let claude: StatusDirectoryAdapter
     @ObservationIgnored private let codex: CodexRolloutAdapter
+    @ObservationIgnored private let pi: StatusDirectoryAdapter
     /// Wakes the app when the earliest lease expires. Nil when there are no leases, so an
     /// idle ohmai schedules no timers at all.
     @ObservationIgnored private var expiryTimer: Task<Void, Never>?
@@ -48,7 +50,8 @@ final class AppModel {
         lidRegistration: LidHelperRegistration = LidHelperRegistration(),
         lidSession: LidSession? = nil,
         claude: StatusDirectoryAdapter = AppModel.makeClaudeAdapter(),
-        codex: CodexRolloutAdapter = AppModel.makeCodexAdapter()
+        codex: CodexRolloutAdapter = AppModel.makeCodexAdapter(),
+        pi: StatusDirectoryAdapter = AppModel.makePiAdapter()
     ) {
         self.updater = updater
         self.prefsStore = prefsStore
@@ -57,6 +60,7 @@ final class AppModel {
         self.lidRegistration = lidRegistration
         self.claude = claude
         self.codex = codex
+        self.pi = pi
         // The team ID reaches code only via Info.plist (`OHMAI_TEAM_ID`).
         let teamID = Bundle.main.object(forInfoDictionaryKey: "OHMAITeamID") as? String ?? ""
         self.lidSession = lidSession ?? LidSession(client: XPCLidHelperClient(teamID: teamID))
@@ -81,15 +85,19 @@ final class AppModel {
             MainActor.assumeIsolated {
                 self?.claude.rescan()
                 self?.codex.rescan()
+                self?.pi.rescan()
                 self?.reevaluate()
             }
         }
         claude.onEvents = { [weak self] in self?.handle($0) }
         codex.onEvents = { [weak self] in self?.handle($0) }
+        pi.onEvents = { [weak self] in self?.handle($0) }
         claude.quietLimit = prefsStore.prefs.busyQuietLimit
         codex.quietLimit = prefsStore.prefs.busyQuietLimit
+        pi.quietLimit = prefsStore.prefs.busyQuietLimit
         claude.start()
         codex.start()
+        pi.start()
         reevaluate()
         #if DEBUG
         Snapshots.runIfRequested(model: self)
@@ -113,6 +121,15 @@ final class AppModel {
         }
         #endif
         return CodexRolloutAdapter()
+    }
+
+    static func makePiAdapter() -> StatusDirectoryAdapter {
+        #if DEBUG
+        if let dir = ProcessInfo.processInfo.environment["OHMAI_PI_STATUS_DIR"] {
+            return PiSessions.makeAdapter(directory: URL(fileURLWithPath: dir, isDirectory: true))
+        }
+        #endif
+        return PiSessions.makeAdapter()
     }
 
     var powerState: PowerState {
@@ -146,8 +163,10 @@ final class AppModel {
         if claude.quietLimit != prefs.busyQuietLimit {
             claude.quietLimit = prefs.busyQuietLimit
             codex.quietLimit = prefs.busyQuietLimit
+            pi.quietLimit = prefs.busyQuietLimit
             claude.rescan()
             codex.rescan()
+            pi.rescan()
         }
         leaseBook.prune(at: now, prefs: prefs)
         let next = Policy.decide(leases: leaseBook.leases, power: powerState, prefs: prefs, now: now)
