@@ -405,7 +405,8 @@ What this means for ohmai:
 
 - **Fixed key order on every line:** `{"timestamp":…,"ordinal":N,"type":"…","payload":{"type":"…"`. The adapter classifies lines from their first 256 bytes and never decodes anything but `session_meta` (for `id` and `cwd`). Message content is never decoded. If the order changes, lines stop matching, no turns are seen and the Mac is allowed to sleep; the fixture tests flag it.
 - **Turns:** `task_started` opens and `task_complete` / `turn_aborted` closes. Turn payloads carry `turn_id` and `root_turn_id`; the adapter only counts open turns.
-- **No pid in the rollout.** Liveness is found by looking for a process named `codex` with the rollout open (libproc). If no `codex` runs at all, any open turn is dead. If one runs but doesn't hold the file, liveness is unknown and the quiet limit decides. **Unverified:** whether the real `codex` keeps its rollout open between writes; if it doesn't, the "unknown" path applies.
+- **No pid in the rollout.** Liveness is found by looking for a process named `codex` with the rollout open (libproc). If no `codex` runs at all, any open turn is dead. If one runs but doesn't hold the file, liveness is unknown and the quiet limit decides.
+- **Verified with a real `codex exec` (2026-11-14, 0.169.0, ~3K tokens):** `codex` holds its rollout file open for the whole turn, so the precise path applies. ohmai showed the session as busy ~3 s after start (FSEvents latency) and released it ~0.6 s after `task_complete` / process exit.
 - **Approval waits aren't persisted**, so a Codex turn waiting on approval looks busy. The quiet limit bounds it. Optional Codex hooks (`PermissionRequest`) could mark it waiting later.
 - Older rollouts (2025) are `.json`, not `.jsonl`, and are ignored for activity.
 
