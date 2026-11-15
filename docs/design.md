@@ -264,6 +264,7 @@ ohmai runs all day in the background, so it must cost nothing when idle and stay
 |---|---|
 | Idle (no leases) | 0% CPU, **no timers**. Wakes only for OS notifications (power source, Low Power Mode, thermal state, system wake) and incoming hook or file events. |
 | Leases held | A single timer, set for the earliest lease expiry (2s tolerance so the OS can coalesce it). No fixed-interval polling. |
+| Agent sessions active | Each adapter may hold **one** renewal timer while its own sessions are busy or waiting, only when the agent gives no heartbeat (Claude: re-read `~/.claude/sessions/` every 30s, 5s tolerance). Process exit is noticed via kqueue (`NOTE_EXIT`), not polling. |
 | Memory | Physical footprint under 30 MB at steady state (step 1 measured 17 MB). |
 | Dropdown | Live-updating views (e.g. "busy 4m") only update while the dropdown is open. Usage totals are cached, not queried on each render. |
 
@@ -280,7 +281,7 @@ ohmai runs all day in the background, so it must cost nothing when idle and stay
 
 1. Menu bar shell, `PowerMonitor`, `AssertionManager`, `Policy` (with tests)
 2. Lid-closed mode: helper, XPC, dead-man switch, opt-in UX in Settings
-3. Claude adapter (hooks + liveness), so keep-awake works end to end
+3. Claude adapter (sessions file + liveness), so keep-awake works end to end. The hooks plugin follows as a cross-check (see agent-integrations.md, open questions).
 4. Codex adapter (rollout watcher), pi adapter (extension)
 5. Ledger + incremental import, month-to-date vs. last month in the dropdown
 6. Launch at login, release pipeline (sign, notarize), Sparkle wiring per updates.md (the `Updater` seam goes in at step 1)

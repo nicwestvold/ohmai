@@ -38,6 +38,8 @@ targets:
         product: OhmaiPower
       - package: OhmaiCore
         product: OhmaiLidXPC
+      - package: OhmaiCore
+        product: OhmaiClaudeAdapter
       # The launchd plist's BundleProgram points at Contents/MacOS/ohmai-lidhelper.
       - target: ohmai-lidhelper
         embed: true
@@ -79,3 +81,4 @@ schemes:
         - package: OhmaiCore/OhmaiCoreTests
         - package: OhmaiCore/OhmaiPowerTests
         - package: OhmaiCore/OhmaiLidHelperCoreTests
+        - package: OhmaiCore/OhmaiClaudeAdapterTests

@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Observation
+import OhmaiClaudeAdapter
 import OhmaiCore
 import OhmaiPower
 
@@ -27,6 +28,7 @@ final class AppModel {
     private(set) var assertionError: AssertionError?
 
     @ObservationIgnored private let assertions: AssertionManager
+    @ObservationIgnored private let claude: ClaudeSessionsAdapter
     /// Wakes the app when the earliest lease expires. Nil when there are no leases, so an
     /// idle ohmai schedules no timers at all.
     @ObservationIgnored private var expiryTimer: Task<Void, Never>?
@@ -41,13 +43,15 @@ final class AppModel {
         power: PowerMonitor = PowerMonitor(),
         assertions: AssertionManager = AssertionManager(),
         lidRegistration: LidHelperRegistration = LidHelperRegistration(),
-        lidSession: LidSession? = nil
+        lidSession: LidSession? = nil,
+        claude: ClaudeSessionsAdapter = AppModel.makeClaudeAdapter()
     ) {
         self.updater = updater
         self.prefsStore = prefsStore
         self.power = power
         self.assertions = assertions
         self.lidRegistration = lidRegistration
+        self.claude = claude
         // The team ID reaches code only via Info.plist (`OHMAI_TEAM_ID`).
         let teamID = Bundle.main.object(forInfoDictionaryKey: "OHMAITeamID") as? String ?? ""
         self.lidSession = lidSession ?? LidSession(client: XPCLidHelperClient(teamID: teamID))
@@ -69,9 +73,24 @@ final class AppModel {
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.reevaluate() }
+            MainActor.assumeIsolated {
+                self?.claude.rescan()
+                self?.reevaluate()
+            }
         }
+        claude.onEvents = { [weak self] in self?.handle($0) }
+        claude.start()
         reevaluate()
+    }
+
+    static func makeClaudeAdapter() -> ClaudeSessionsAdapter {
+        #if DEBUG
+        // Debug builds only: point at a scratch directory for manual testing.
+        if let dir = ProcessInfo.processInfo.environment["OHMAI_CLAUDE_SESSIONS_DIR"] {
+            return ClaudeSessionsAdapter(directory: URL(fileURLWithPath: dir, isDirectory: true))
+        }
+        #endif
+        return ClaudeSessionsAdapter()
     }
 
     var powerState: PowerState {
@@ -92,9 +111,10 @@ final class AppModel {
         return .asleep
     }
 
-    /// Entry point for adapters (build step 3 onward).
-    func handle(_ event: ActivityEvent) {
-        leaseBook.apply(event, now: .now)
+    /// Entry point for adapters. One reevaluation per batch.
+    func handle(_ events: [ActivityEvent]) {
+        let now = Date.now
+        for event in events { leaseBook.apply(event, now: now) }
         reevaluate()
     }
 

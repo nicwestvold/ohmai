@@ -55,6 +55,12 @@ struct MenuContent: View {
                         .fill(lease.isBusy ? Color.green : Color.orange)
                         .frame(width: 7, height: 7)
                     Text(lease.session.agent.displayName)
+                    if let project = lease.project {
+                        Text(URL(fileURLWithPath: project).lastPathComponent + "/")
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
                     Spacer()
                     Text(lease.isBusy ? "busy" : "waiting on you")
                         .foregroundStyle(.secondary)
