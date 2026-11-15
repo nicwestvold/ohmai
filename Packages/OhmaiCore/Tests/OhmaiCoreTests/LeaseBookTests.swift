@@ -160,3 +160,15 @@ struct LeaseBookTests {
         #expect(book.nextExpiry(prefs: .default) == nil)
     }
 }
+
+@Suite("LeaseBook project metadata")
+struct LeaseProjectTests {
+    @Test func projectIsKeptAndUpdated() {
+        var book = LeaseBook()
+        book.apply(ActivityEvent(session: key(), activity: .busy, at: t0, project: "/a"), now: t0)
+        book.apply(ActivityEvent(session: key(), activity: .busy, at: t0.plus(minutes: 1)), now: t0.plus(minutes: 1))
+        #expect(book.leases[0].project == "/a")
+        book.apply(ActivityEvent(session: key(), activity: .waiting, at: t0.plus(minutes: 2), project: "/b"), now: t0.plus(minutes: 2))
+        #expect(book.leases[0].project == "/b")
+    }
+}

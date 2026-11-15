@@ -15,12 +15,14 @@ public struct Lease: Sendable, Equatable {
     public var kind: Kind
     public let grantedAt: Date
     public var lastSignalAt: Date
+    public var project: String?
 
-    public init(session: SessionKey, kind: Kind, grantedAt: Date, lastSignalAt: Date) {
+    public init(session: SessionKey, kind: Kind, grantedAt: Date, lastSignalAt: Date, project: String? = nil) {
         self.session = session
         self.kind = kind
         self.grantedAt = grantedAt
         self.lastSignalAt = lastSignalAt
+        self.project = project
     }
 
     public var isBusy: Bool { kind == .busy }
@@ -67,12 +69,13 @@ public struct LeaseBook: Sendable, Equatable {
         case .busy, .waiting:
             guard var lease = leasesBySession[key] else {
                 let kind: Lease.Kind = event.activity == .busy ? .busy : .waiting(since: at)
-                leasesBySession[key] = Lease(session: key, kind: kind, grantedAt: at, lastSignalAt: at)
+                leasesBySession[key] = Lease(session: key, kind: kind, grantedAt: at, lastSignalAt: at, project: event.project)
                 return
             }
             // Ignore stale, out-of-order signals.
             guard at >= lease.lastSignalAt else { return }
             lease.lastSignalAt = at
+            if let project = event.project { lease.project = project }
             switch (lease.kind, event.activity) {
             case (.waiting, .waiting):
                 break  // keep the original `since`: the cap counts from when waiting started

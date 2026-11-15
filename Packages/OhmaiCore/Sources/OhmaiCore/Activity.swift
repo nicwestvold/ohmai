@@ -42,10 +42,13 @@ public struct ActivityEvent: Sendable, Equatable {
     public let session: SessionKey
     public let activity: Activity
     public let at: Date
+    /// The session's working directory. Metadata only, shown in the dropdown.
+    public let project: String?
 
-    public init(session: SessionKey, activity: Activity, at: Date) {
+    public init(session: SessionKey, activity: Activity, at: Date, project: String? = nil) {
         self.session = session
         self.activity = activity
         self.at = at
+        self.project = project
     }
 }
