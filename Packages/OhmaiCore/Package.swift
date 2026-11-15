@@ -15,6 +15,7 @@ let package = Package(
         .library(name: "OhmaiPiAdapter", targets: ["OhmaiPiAdapter"]),
         .library(name: "OhmaiUsage", targets: ["OhmaiUsage"]),
         .library(name: "OhmaiTranscripts", targets: ["OhmaiTranscripts"]),
+        .library(name: "OhmaiLedger", targets: ["OhmaiLedger"]),
     ],
     targets: [
         // Domain types, leases and the pure `Policy`. Foundation only: no I/O.
@@ -44,6 +45,13 @@ let package = Package(
         .testTarget(name: "OhmaiUsageTests", dependencies: ["OhmaiUsage"]),
         // THE privacy boundary: the only module that reads transcripts. Returns usage records only.
         .target(name: "OhmaiTranscripts", dependencies: ["OhmaiCore", "OhmaiUsage"]),
+        // SQLite usage store (system libsqlite3) and the incremental importer.
+        .target(
+            name: "OhmaiLedger",
+            dependencies: ["OhmaiCore", "OhmaiUsage", "OhmaiTranscripts"],
+            linkerSettings: [.linkedLibrary("sqlite3")]
+        ),
+        .testTarget(name: "OhmaiLedgerTests", dependencies: ["OhmaiLedger"]),
         .testTarget(name: "OhmaiTranscriptsTests", dependencies: ["OhmaiTranscripts"], resources: [.copy("Fixtures")]),
         .testTarget(name: "OhmaiCoreTests", dependencies: ["OhmaiCore"]),
         .testTarget(name: "OhmaiPowerTests", dependencies: ["OhmaiPower", "OhmaiPowerSource"]),

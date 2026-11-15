@@ -59,7 +59,7 @@ public struct TranscriptParser: Sendable {
     private static let usageKey = Data(#""usage":{"#.utf8)
 
     static func claude(_ line: Data) -> UsageRecord? {
-        guard line.range(of: claudeAssistant) != nil, line.range(of: usageKey) != nil,
+        guard contains(line, claudeAssistant), contains(line, usageKey),
               let json = object(line),
               json["type"] as? String == "assistant",
               let message = json["message"] as? [String: Any],
@@ -99,7 +99,7 @@ public struct TranscriptParser: Sendable {
 
     mutating func codex(_ line: Data) -> UsageRecord? {
         let head = line.prefix(160)
-        guard Self.codexTypes.contains(where: { head.range(of: $0) != nil }),
+        guard Self.codexTypes.contains(where: { Self.contains(head, $0) }),
               let json = Self.object(line), let payload = json["payload"] as? [String: Any]
         else { return nil }
 
@@ -137,7 +137,7 @@ public struct TranscriptParser: Sendable {
     // MARK: - pi
 
     static func pi(_ line: Data, path: String) -> UsageRecord? {
-        guard line.range(of: usageKey) != nil, let json = object(line),
+        guard contains(line, usageKey), let json = object(line),
               let id = json["id"] as? String, let timestamp = date(json["timestamp"])
         else { return nil }
 
@@ -174,6 +174,16 @@ public struct TranscriptParser: Sendable {
     }
 
     // MARK: - Helpers
+
+    /// Byte search via memmem: the pre-filter runs over every line of gigabytes of history.
+    static func contains(_ haystack: Data, _ needle: Data) -> Bool {
+        haystack.withUnsafeBytes { h in
+            needle.withUnsafeBytes { n in
+                guard let hp = h.baseAddress, let np = n.baseAddress, h.count >= n.count else { return false }
+                return memmem(hp, h.count, np, n.count) != nil
+            }
+        }
+    }
 
     static func object(_ line: Data) -> [String: Any]? {
         (try? JSONSerialization.jsonObject(with: line)) as? [String: Any]
