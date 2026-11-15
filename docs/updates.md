@@ -2,7 +2,13 @@
 
 ohmai will update itself with [Sparkle 2](https://sparkle-project.org), the open-source (MIT) update framework most directly distributed Mac apps use. This doc covers how the app is prepared for it now, and what remains to wire it up later.
 
-**Status:** prepared, not wired. The app ships with an update *seam* and a no-op implementation. Sparkle is added when there's a feed to point at.
+**Status: deferred (decided 2026-11-14).** v1 ships without Sparkle, so ohmai makes **no network requests at all**. Releases are notarized zips attached to GitHub releases on the private `nicwestvold/ohmai` repo (`make release`, then `make publish`), installed by hand. The update *seam* and its no-op implementation stay in place.
+
+Why: while ohmai is private and mostly used by its author, Sparkle's cost (a third-party dependency next to a root helper, an EdDSA key to guard forever, a public feed, and a network call that weakens the privacy promise) outweighs automatic updates. Revisit if ohmai goes open source or gains users who won't update by hand. A Homebrew cask is the step before Sparkle: updates via `brew`, still no network code in ohmai.
+
+Moving later: a private repo's release assets can't be fetched without a token (never ship one in the app), so Sparkle needs a public feed. If the repo goes public, its existing releases become downloadable and the appcast can live there. A public `nicwestvold/ohmai-releases` repo exists from an earlier plan; it's unused.
+
+Everything below is the plan for when Sparkle is wired.
 
 ## Decisions
 

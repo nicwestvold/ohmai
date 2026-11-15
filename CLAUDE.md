@@ -6,7 +6,7 @@ A macOS menu bar app. It keeps the Mac awake while AI coding agents (Claude Code
 
 - `docs/design.md`: v1 scope, domain terms, architecture, power policy, lid-closed mode, UI, icon, build order. **This is the source of truth.** If code and doc disagree, raise it; don't silently diverge.
 - `docs/agent-integrations.md`: how each agent signals busy/idle and where usage data lives, with verified findings and open questions.
-- `docs/updates.md`: the Sparkle plan. It sits behind an `Updater` seam and isn't wired yet.
+- `docs/updates.md`: updates are deferred (no Sparkle in v1); the plan for adding it later, behind the `Updater` seam.
 
 When a decision changes, update the relevant doc in the same change.
 
@@ -53,7 +53,7 @@ Main components:
 - ohmai reads transcripts that contain the user's code and prompts. Parsing code extracts **only** usage numbers and session metadata (agent, model, project path, timestamps, token counts).
 - Never store, log or display message content.
 - Keep all transcript parsing in one module whose public API returns only usage records.
-- **No network calls**, except Sparkle's update check once it's wired. Don't add analytics, crash reporting, or remote price fetching.
+- **No network calls. At all.** ohmai v1 makes no network requests (Sparkle is deferred; see `docs/updates.md`). Don't add analytics, crash reporting, remote price fetching, or update checks.
 
 ### Keeping the Mac awake safely
 - Every lease must expire (signal timeout, pid liveness + start-time check).
@@ -79,6 +79,7 @@ Main components:
 - `make release` runs `scripts/release.sh`: archive, Developer ID export, signature checks, notarize, staple, Gatekeeper check, zip. `make release-check` stops before uploading to Apple.
 - Notarization credentials live in the login keychain as the notarytool profile `ohmai-notary` (override with `NOTARY_PROFILE`). Never put credentials in the repo.
 - After a release, tag it `build-<N>` and bump `CURRENT_PROJECT_VERSION`.
+- `make publish` attaches the zip to a GitHub release on the private `nicwestvold/ohmai` repo. It needs the `build-<N>` tag already pushed and never pushes anything itself; pushing is the user's call.
 
 ## Layout and build
 
