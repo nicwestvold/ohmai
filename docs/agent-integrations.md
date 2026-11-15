@@ -41,7 +41,7 @@ Items marked **(unverified)** still need a hands-on check before an adapter depe
 
 | Agent | Activity source | Usage source |
 |---|---|---|
-| Claude Code | Watch `~/.claude/sessions/<pid>.json` (busy / idle / waiting); ohmai plugin hooks as a cross-check | Transcripts, plus a statusline tee wrapper for limits |
+| Claude Code | Watch `~/.claude/sessions/<pid>.json` (busy / idle / waiting) + pid liveness + transcript modification times. No hooks plugin in v1. | Transcripts, plus a statusline tee wrapper for limits |
 | Codex | Watch rollout files (no setup needed); optional hooks for "waiting on approval" | Rollout files |
 | pi | ohmai extension | Session files |
 

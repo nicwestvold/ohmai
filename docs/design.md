@@ -255,7 +255,7 @@ ohmai's Settings → Integrations page installs and checks each one:
 
 | Agent | Installs | Notes |
 |---|---|---|
-| Claude Code | Nothing required (watches `~/.claude/sessions/`). Optional plugin with `http` hooks as a cross-check; statusline wrapper that chains the existing command | Never overwrite the user's statusline; wrap it |
+| Claude Code | Nothing required (watches `~/.claude/sessions/`). No hooks plugin in v1: the sessions file, pid liveness and the quiet limit cover what hooks would. Statusline wrapper (later, for limits) that chains the existing command | Never overwrite the user's statusline; wrap it |
 | Codex | Nothing required (watches rollouts). Optional `~/.codex/hooks.json` for approval-waiting | Hooks must be approved once in Codex; unapproved hooks fail silently, so Settings shows whether hook events have actually arrived |
 | pi | `~/.pi/agent/extensions/ohmai.ts` | — |
 
@@ -284,7 +284,7 @@ ohmai runs all day in the background, so it must cost nothing when idle and stay
 
 1. Menu bar shell, `PowerMonitor`, `AssertionManager`, `Policy` (with tests)
 2. Lid-closed mode: helper, XPC, dead-man switch, opt-in UX in Settings
-3. Claude adapter (sessions file + liveness), so keep-awake works end to end. The hooks plugin follows as a cross-check (see agent-integrations.md, open questions).
+3. Claude adapter (sessions file + liveness + quiet limit), so keep-awake works end to end. No hooks plugin in v1: hooks are blind during a long tool call, the same as transcripts, and a plugin plus a localhost listener adds setup and a local attack surface for no extra coverage.
 4. Codex adapter (rollout watcher), pi adapter (extension)
 5. Ledger + incremental import, month-to-date vs. last month in the dropdown
 6. Launch at login, release pipeline (sign, notarize), Sparkle wiring per updates.md (the `Updater` seam goes in at step 1)

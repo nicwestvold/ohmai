@@ -70,7 +70,7 @@ Main components:
 ### Undocumented agent signals
 - `~/.claude/sessions/<pid>.json` (status: busy / idle / waiting) and the Codex rollout file formats are **undocumented** and can change in any agent release.
 - Parse them defensively: unknown fields are ignored, and unknown values are logged once and treated as "unknown", never as busy forever.
-- Hooks are the cross-check.
+- Cross-check with a second signal: for Claude, pid liveness plus transcript modification times. (No Claude hooks plugin in v1. Codex hooks are optional, for approval-waiting.)
 
 ### Version numbers
 `CFBundleVersion` is a monotonically increasing build number (Sparkle depends on it). Never reuse or decrease it.
