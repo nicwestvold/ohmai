@@ -9,7 +9,7 @@ enum Snapshots {
     static func runIfRequested(model: AppModel) {
         guard let dir = ProcessInfo.processInfo.environment["OHMAI_SNAPSHOT_DIR"] else { return }
         // Let adapters deliver their first scan before rendering.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
             let out = URL(fileURLWithPath: dir, isDirectory: true)
             try? FileManager.default.createDirectory(at: out, withIntermediateDirectories: true)
             let pages: [(String, AnyView)] = [

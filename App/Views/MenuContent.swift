@@ -19,6 +19,12 @@ struct MenuContent: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 10)
 
+            Divider().padding(.horizontal, 14)
+
+            UsageSection(usage: model.usage)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+
             if !problems.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(problems, id: \.self) { problem in
@@ -37,7 +43,10 @@ struct MenuContent: View {
                 .padding(6)
         }
         .frame(width: 320)
-        .onAppear { model.lidRegistration.refresh() }
+        .onAppear {
+            model.lidRegistration.refresh()
+            Task { await model.usage.refresh() }
+        }
     }
 
     // MARK: - Header

@@ -25,6 +25,7 @@ final class AppModel {
     let updater: any Updater
     let lidRegistration: LidHelperRegistration
     let lidSession: LidSession
+    let usage = UsageModel()
 
     private(set) var leaseBook = LeaseBook()
     private(set) var decision: Decision = .allowSleep(.noLeases)
@@ -98,6 +99,7 @@ final class AppModel {
         claude.start()
         codex.start()
         pi.start()
+        usage.start()
         reevaluate()
         #if DEBUG
         Snapshots.runIfRequested(model: self)

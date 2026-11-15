@@ -243,6 +243,10 @@ All of the following must hold:
   - **Pricing table:** a bundled, versioned per-model price list (input, output, cache write, cache read). pi already records `cost` per message; use it directly. For Claude and Codex subscriptions this is "what it would have cost on the API", not a bill, and the UI labels it as an estimate.
 - **History:** Claude Code deletes transcripts after 30 days by default (`cleanupPeriodDays`). The Ledger must keep its own copy so last month's numbers survive. On first run, import everything still on disk; for the first month the comparison may be partial, and the UI says so.
 - **Plan-limit bars** (5h / weekly) are captured in the Ledger, but they appear in the dropdown only as a later option.
+- **Dropdown (built, step 5):** one row per agent plus a total: `this month / last month total` and a ▲/▼ change against the **same days** of last month. A bar under each row fills with this month so far, ends at last month's total, and a tick marks the same day last month. Hovering shows tokens, the same-days figures and the estimate note. The change is hidden (shown as "—") while history is partial.
+- **Unpriced models** (no entry in `prices.json`, e.g. Codex's `gpt-6.1-sol` today) never count as $0: that agent's row compares on tokens, and the total stays on cost but shows `+` as a lower bound. Prices are added only from a real source.
+- **Claude Code writes 1-hour cache entries** (`cache_creation.ephemeral_1h_input_tokens`), billed at 2× input, not 1.25×. The parser keeps the split.
+- **Import performance (measured 2026-11-14, 3.5 GB / 1,189 files):** first import 27 s at background priority, 72 MB peak footprint; incremental imports ~0.1 s; ledger 20 MB. Reads drain an autorelease pool per 4 MB chunk (without it the peak was 4.9 GB). Re-run with `OHMAI_BENCH_DB=… swift test -c release --filter RealImportBenchmark`.
 - **Metrics window (later):**
   - tokens per day per agent
   - input / output / cache split

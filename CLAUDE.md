@@ -79,7 +79,7 @@ Main components:
 
 | Path | What |
 |---|---|
-| `Packages/OhmaiCore` | Local Swift package. `OhmaiCore`: domain types, leases and `Policy`, Foundation only, no I/O. `OhmaiPower`: `PowerMonitor`, `AssertionManager` (IOKit), the lid helper client and `LidSession`. `OhmaiLidXPC`: the XPC contract. `OhmaiLidHelperCore`: everything the root helper does (`LidController` is the dead-man switch). `OhmaiPowerSource`: battery and thermal reading, shared with the helper. `OhmaiAdapterSupport`: pid liveness and start time, exit and directory watchers. `OhmaiClaudeAdapter`, `OhmaiCodexAdapter`, `OhmaiPiAdapter`: one adapter per agent, each its own target. Claude and pi share `StatusDirectoryAdapter` / `StatusRecordScanner` (per-process status files). pi's extension ships as a resource in `OhmaiPiAdapter`. |
+| `Packages/OhmaiCore` | Local Swift package. `OhmaiCore`: domain types, leases and `Policy`, Foundation only, no I/O. `OhmaiPower`: `PowerMonitor`, `AssertionManager` (IOKit), the lid helper client and `LidSession`. `OhmaiLidXPC`: the XPC contract. `OhmaiLidHelperCore`: everything the root helper does (`LidController` is the dead-man switch). `OhmaiPowerSource`: battery and thermal reading, shared with the helper. `OhmaiAdapterSupport`: pid liveness and start time, exit and directory watchers. `OhmaiClaudeAdapter`, `OhmaiCodexAdapter`, `OhmaiPiAdapter`: one adapter per agent, each its own target. Claude and pi share `StatusDirectoryAdapter` / `StatusRecordScanner` (per-process status files). pi's extension ships as a resource in `OhmaiPiAdapter`. `OhmaiUsage`: usage records, the bundled `prices.json`, month comparison. `OhmaiTranscripts`: **the only module that parses transcripts**; public API returns `UsageRecord`s only. `OhmaiLedger`: SQLite store and incremental importer. |
 | `App/` | The app target: composition root, `AppModel`, SwiftUI views, the `Updater` seam, helper registration |
 | `LidHelper/` | The root helper's `main.swift` (wiring only), its Info.plist and launchd plist |
 | `Config/*.xcconfig` | Signing, versions, `OHMAI_TEAM_ID`, `OHMAI_UPDATES_ENABLED`. Per-developer overrides go in `Config/Local.xcconfig` (gitignored). |
@@ -87,7 +87,7 @@ Main components:
 
 - `make test` runs the package tests (`swift test`); it's fast and needs no Xcode project.
 - `make project` regenerates the Xcode project; `make build` builds the app.
-- Debug builds read `OHMAI_CLAUDE_SESSIONS_DIR`, `OHMAI_CODEX_SESSIONS_DIR` and `OHMAI_PI_STATUS_DIR` to point the adapters at scratch directories, for manual testing without touching real agent data. `OHMAI_SNAPSHOT_DIR` renders the dropdown and Settings tabs to PNG (light and dark) and quits.
+- Debug builds read `OHMAI_CLAUDE_SESSIONS_DIR`, `OHMAI_CODEX_SESSIONS_DIR` and `OHMAI_PI_STATUS_DIR` to point the adapters at scratch directories, for manual testing without touching real agent data. `OHMAI_SNAPSHOT_DIR` renders the dropdown and Settings tabs to PNG (light and dark) and quits. `OHMAI_LEDGER_DB` points the usage ledger at a scratch database.
 - Try the pi extension without installing it: `pi -p --no-session -e Packages/OhmaiCore/Sources/OhmaiPiAdapter/Resources/ohmai.ts "…"`.
 
 ## Testing
