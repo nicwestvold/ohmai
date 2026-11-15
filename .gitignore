@@ -12,3 +12,6 @@ xcuserdata/
 
 # Per-developer signing overrides
 Config/Local.xcconfig
+
+# Python bytecode from scripts/
+__pycache__/
