@@ -41,20 +41,34 @@ public enum Decision: Sendable, Equatable {
 
     /// One line for the menu, e.g. "Awake: 2 agents · on AC".
     public var summary: String {
+        detail.map { "\(headline): \($0)" } ?? headline
+    }
+
+    /// Short status, e.g. "Awake" or "Letting Mac sleep".
+    public var headline: String {
+        switch self {
+        case .allowSleep(.noLeases): "Asleep"
+        case .allowSleep(.keepAwakeOff): "Keep-awake is off"
+        case .allowSleep: "Letting Mac sleep"
+        case .stayAwake: "Awake"
+        case .stayAwakeLidClosed: "Awake, lid closed"
+        }
+    }
+
+    /// Why, e.g. "2 agents · on AC" or "battery 42%". Nil when the headline says it all.
+    public var detail: String? {
         switch self {
         case .allowSleep(let reason):
             switch reason {
-            case .noLeases: return "Asleep: no agents"
-            case .keepAwakeOff: return "Keep-awake is off"
-            case .thermal(let t): return "Letting Mac sleep: thermal \(t)"
-            case .batteryLow(let p): return "Letting Mac sleep: battery \(p.map { "\($0)%" } ?? "low")"
-            case .lowPowerMode: return "Letting Mac sleep: Low Power Mode"
-            case .powerSourceUnknown: return "Letting Mac sleep: power source unknown"
+            case .noLeases: "no agents"
+            case .keepAwakeOff: nil
+            case .thermal(let t): "thermal \(t)"
+            case .batteryLow(let p): "battery \(p.map { "\($0)%" } ?? "low")"
+            case .lowPowerMode: "Low Power Mode"
+            case .powerSourceUnknown: "power source unknown"
             }
-        case .stayAwake(let r):
-            return "Awake: \(Self.describe(r))"
-        case .stayAwakeLidClosed(let r):
-            return "Awake, lid closed: \(Self.describe(r))"
+        case .stayAwake(let r), .stayAwakeLidClosed(let r):
+            Self.describe(r)
         }
     }
 
