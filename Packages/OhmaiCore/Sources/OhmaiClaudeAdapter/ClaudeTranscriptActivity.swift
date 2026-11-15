@@ -1,4 +1,5 @@
 import Foundation
+import OhmaiAdapterSupport
 
 /// Finds when a Claude session's transcript was last written, from file modification times
 /// only. Never opens a transcript: they contain the user's code and prompts.
@@ -17,6 +18,10 @@ public final class ClaudeTranscriptActivity: TranscriptActivity, @unchecked Send
 
     public init(projects: URL = ClaudeTranscriptActivity.defaultProjectsDirectory) {
         self.projects = projects
+    }
+
+    public func lastWrite(for record: StatusRecord) -> Date? {
+        lastWrite(sessionId: record.sessionId)
     }
 
     public func lastWrite(sessionId: String) -> Date? {

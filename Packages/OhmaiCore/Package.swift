@@ -9,6 +9,7 @@ let package = Package(
         .library(name: "OhmaiPower", targets: ["OhmaiPower"]),
         .library(name: "OhmaiLidXPC", targets: ["OhmaiLidXPC"]),
         .library(name: "OhmaiLidHelperCore", targets: ["OhmaiLidHelperCore"]),
+        .library(name: "OhmaiAdapterSupport", targets: ["OhmaiAdapterSupport"]),
         .library(name: "OhmaiClaudeAdapter", targets: ["OhmaiClaudeAdapter"]),
         .library(name: "OhmaiCodexAdapter", targets: ["OhmaiCodexAdapter"]),
     ],
@@ -24,7 +25,7 @@ let package = Package(
         // Everything the root lid helper does, minus `main`. Runs as root: keep it small.
         .target(name: "OhmaiLidHelperCore", dependencies: ["OhmaiCore", "OhmaiPowerSource", "OhmaiLidXPC"]),
         // Shared by adapters: process liveness and start time, exit and directory watchers.
-        .target(name: "OhmaiAdapterSupport"),
+        .target(name: "OhmaiAdapterSupport", dependencies: ["OhmaiCore"]),
         // Claude Code: `~/.claude/sessions/<pid>.json` (undocumented) plus pid liveness.
         .target(name: "OhmaiClaudeAdapter", dependencies: ["OhmaiCore", "OhmaiAdapterSupport"]),
         // Codex: rollout files (undocumented); turn boundaries from line prefixes only.

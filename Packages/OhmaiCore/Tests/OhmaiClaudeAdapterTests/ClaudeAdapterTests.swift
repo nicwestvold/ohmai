@@ -17,20 +17,25 @@ struct FakeInspector: ProcessInspector {
 
 struct FakeTranscripts: TranscriptActivity {
     var writes: [String: Date] = [:]
-    func lastWrite(sessionId: String) -> Date? { writes[sessionId] }
+    func lastWrite(for record: StatusRecord) -> Date? { writes[record.sessionId] }
+}
+
+/// Claude files through the shared scanner, as the adapter does.
+struct ClaudeScan {
+    let scanner: StatusRecordScanner
+    func scan(files: [Data], previous: [SessionKey: Activity], now: Date, quietLimit: TimeInterval) -> StatusRecordScanner.Result {
+        ClaudeSessions.scan(files: files, scanner: scanner, previous: previous, now: now, quietLimit: quietLimit)
+    }
+    func scan(files: [Data], previous: [SessionKey: Activity], now: Date) -> StatusRecordScanner.Result {
+        scan(files: files, previous: previous, now: now, quietLimit: 3600)
+    }
 }
 
 /// Default: the transcript was written just now, so the quiet limit never trips.
 private let fresh = FakeTranscripts(writes: [fixtureSession: now])
 
-private func scanner(_ inspector: FakeInspector, _ transcripts: FakeTranscripts = fresh) -> ClaudeSessionScanner {
-    ClaudeSessionScanner(inspector: inspector, transcripts: transcripts)
-}
-
-private extension ClaudeSessionScanner {
-    func scan(files: [Data], previous: [SessionKey: Activity], now: Date) -> Result {
-        scan(files: files, previous: previous, now: now, quietLimit: 3600)
-    }
+private func scanner(_ inspector: FakeInspector, _ transcripts: FakeTranscripts = fresh) -> ClaudeScan {
+    ClaudeScan(scanner: StatusRecordScanner(inspector: inspector, transcripts: transcripts))
 }
 
 private let alive = FakeInspector(processes: [fixturePid: fixtureProcessStart])
@@ -110,7 +115,7 @@ struct ClaudeSessionFileTests {
     }
 }
 
-@Suite("ClaudeSessionScanner")
+@Suite("Claude sessions through StatusRecordScanner")
 struct ClaudeSessionScannerTests {
     @Test(arguments: [("busy", Activity.busy), ("waiting", .waiting), ("idle", .idle)])
     func emitsActivityForLiveSession(_ name: String, _ activity: Activity) throws {

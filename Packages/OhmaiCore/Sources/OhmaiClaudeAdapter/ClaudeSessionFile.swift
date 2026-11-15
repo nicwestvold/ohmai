@@ -1,4 +1,5 @@
 import Foundation
+import OhmaiAdapterSupport
 
 /// One `~/.claude/sessions/<pid>.json`. **Undocumented format**: parse defensively.
 ///
@@ -70,4 +71,18 @@ public struct ClaudeSessionFile: Sendable, Equatable {
         f.dateFormat = "EEE MMM d HH:mm:ss yyyy"
         return f
     }()
+}
+
+extension ClaudeSessionFile {
+    public var record: StatusRecord {
+        let mapped: StatusRecord.Status = switch status {
+        case .busy: .busy
+        case .idle: .idle
+        case .waiting: .waiting
+        case .unknown(let raw): .unknown(raw)
+        }
+        return StatusRecord(
+            agent: .claude, pid: pid, sessionId: sessionId, cwd: cwd, status: mapped,
+            startedAt: startedAt, processStart: processStart, statusUpdatedAt: statusUpdatedAt)
+    }
 }

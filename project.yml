@@ -39,6 +39,8 @@ targets:
       - package: OhmaiCore
         product: OhmaiLidXPC
       - package: OhmaiCore
+        product: OhmaiAdapterSupport
+      - package: OhmaiCore
         product: OhmaiClaudeAdapter
       - package: OhmaiCore
         product: OhmaiCodexAdapter

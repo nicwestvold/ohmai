@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import Observation
+import OhmaiAdapterSupport
 import OhmaiClaudeAdapter
 import OhmaiCodexAdapter
 import OhmaiCore
@@ -29,7 +30,7 @@ final class AppModel {
     private(set) var assertionError: AssertionError?
 
     @ObservationIgnored private let assertions: AssertionManager
-    @ObservationIgnored private let claude: ClaudeSessionsAdapter
+    @ObservationIgnored private let claude: StatusDirectoryAdapter
     @ObservationIgnored private let codex: CodexRolloutAdapter
     /// Wakes the app when the earliest lease expires. Nil when there are no leases, so an
     /// idle ohmai schedules no timers at all.
@@ -46,7 +47,7 @@ final class AppModel {
         assertions: AssertionManager = AssertionManager(),
         lidRegistration: LidHelperRegistration = LidHelperRegistration(),
         lidSession: LidSession? = nil,
-        claude: ClaudeSessionsAdapter = AppModel.makeClaudeAdapter(),
+        claude: StatusDirectoryAdapter = AppModel.makeClaudeAdapter(),
         codex: CodexRolloutAdapter = AppModel.makeCodexAdapter()
     ) {
         self.updater = updater
@@ -95,14 +96,14 @@ final class AppModel {
         #endif
     }
 
-    static func makeClaudeAdapter() -> ClaudeSessionsAdapter {
+    static func makeClaudeAdapter() -> StatusDirectoryAdapter {
         #if DEBUG
         // Debug builds only: point at a scratch directory for manual testing.
         if let dir = ProcessInfo.processInfo.environment["OHMAI_CLAUDE_SESSIONS_DIR"] {
-            return ClaudeSessionsAdapter(directory: URL(fileURLWithPath: dir, isDirectory: true))
+            return ClaudeSessions.makeAdapter(directory: URL(fileURLWithPath: dir, isDirectory: true))
         }
         #endif
-        return ClaudeSessionsAdapter()
+        return ClaudeSessions.makeAdapter()
     }
 
     static func makeCodexAdapter() -> CodexRolloutAdapter {
