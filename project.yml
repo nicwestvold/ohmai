@@ -64,6 +64,18 @@ targets:
         copy:
           destination: executables
 
+    postBuildScripts:
+      # Debug builds must not carry the lid helper: its launchd record names the release app
+      # as owner, and launching a Debug copy made macOS re-evaluate and switch off the
+      # installed app's approved helper. Runs before code signing.
+      - name: Strip lid helper from Debug builds
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ "$CONFIGURATION" = "Debug" ]; then
+            rm -rf "$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Library/LaunchDaemons"
+            rm -f "$TARGET_BUILD_DIR/$EXECUTABLE_FOLDER_PATH/ohmai-lidhelper"
+          fi
+
   # Root launchd daemon. Logic lives in OhmaiLidHelperCore; see docs/design.md.
   ohmai-lidhelper:
     type: tool
