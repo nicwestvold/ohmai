@@ -3,6 +3,7 @@ import IOKit.ps
 import Observation
 import notify
 import OhmaiCore
+import OhmaiPowerSource
 
 /// Watches the power source, Low Power Mode and thermal state, and reports changes.
 @MainActor
@@ -47,19 +48,6 @@ public final class PowerMonitor {
             observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 MainActor.assumeIsolated { self?.refresh() }
             })
-        }
-    }
-}
-
-extension ThermalState {
-    public init(_ state: ProcessInfo.ThermalState) {
-        switch state {
-        case .nominal: self = .nominal
-        case .fair: self = .fair
-        case .serious: self = .serious
-        case .critical: self = .critical
-        // Unknown future values: assume the worst, so we release.
-        @unknown default: self = .critical
         }
     }
 }

@@ -44,3 +44,16 @@ public enum PowerSourceReader {
         return Swift.min(100, Swift.max(0, current * 100 / max))
     }
 }
+
+extension ThermalState {
+    public init(_ state: ProcessInfo.ThermalState) {
+        switch state {
+        case .nominal: self = .nominal
+        case .fair: self = .fair
+        case .serious: self = .serious
+        case .critical: self = .critical
+        // Unknown future values: assume the worst, so we release.
+        @unknown default: self = .critical
+        }
+    }
+}

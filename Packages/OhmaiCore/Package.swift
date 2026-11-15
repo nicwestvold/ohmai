@@ -15,12 +15,14 @@ let package = Package(
         .target(name: "OhmaiCore"),
         // The XPC contract shared by the app and the lid helper. Foundation only.
         .target(name: "OhmaiLidXPC"),
-        // OS-facing power code: IOKit power sources, IOPMAssertion, the lid helper client.
-        .target(name: "OhmaiPower", dependencies: ["OhmaiCore", "OhmaiLidXPC"]),
+        // Reads the power source and thermal state. Shared by the app and the root helper.
+        .target(name: "OhmaiPowerSource", dependencies: ["OhmaiCore"]),
+        // OS-facing power code: IOPMAssertion, power monitoring, the lid helper client.
+        .target(name: "OhmaiPower", dependencies: ["OhmaiCore", "OhmaiPowerSource", "OhmaiLidXPC"]),
         // Everything the root lid helper does, minus `main`. Runs as root: keep it small.
-        .target(name: "OhmaiLidHelperCore", dependencies: ["OhmaiCore", "OhmaiPower", "OhmaiLidXPC"]),
+        .target(name: "OhmaiLidHelperCore", dependencies: ["OhmaiCore", "OhmaiPowerSource", "OhmaiLidXPC"]),
         .testTarget(name: "OhmaiCoreTests", dependencies: ["OhmaiCore"]),
-        .testTarget(name: "OhmaiPowerTests", dependencies: ["OhmaiPower"]),
+        .testTarget(name: "OhmaiPowerTests", dependencies: ["OhmaiPower", "OhmaiPowerSource"]),
         .testTarget(name: "OhmaiLidHelperCoreTests", dependencies: ["OhmaiLidHelperCore"]),
     ]
 )

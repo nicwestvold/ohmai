@@ -1,6 +1,6 @@
 import Testing
 import OhmaiCore
-@testable import OhmaiPower
+@testable import OhmaiPowerSource
 
 @Suite("PowerSourceReader.parse")
 struct PowerSourceReaderTests {

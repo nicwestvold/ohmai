@@ -1,6 +1,6 @@
 import Foundation
 import OhmaiCore
-import OhmaiPower
+import OhmaiPowerSource
 
 /// The helper's one and only system command: `/usr/bin/pmset -a disablesleep 0|1`.
 /// Fixed path, fixed arguments, no shell.
