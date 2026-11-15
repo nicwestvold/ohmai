@@ -21,17 +21,24 @@ struct LidClosedTab: View {
                 }
             }
 
+            if enabled && registration.status == .requiresApproval {
+                Section {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("One more step", systemImage: "exclamationmark.circle.fill")
+                            .font(.headline)
+                            .foregroundStyle(.orange)
+                        Text("Approve ohmai in System Settings → General → Login Items & Extensions, under Allow in the Background. Until then, lid-closed mode stays off.")
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("Open Login Items…") { registration.openLoginItems() }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+
             if enabled {
                 Section {
                     LabeledContent("Helper") {
                         HelperBadge(status: registration.status)
-                    }
-                    if registration.status == .requiresApproval {
-                        HStack {
-                            Footnote("macOS needs your OK in System Settings → Login Items.")
-                            Spacer()
-                            Button("Open Login Items…") { registration.openLoginItems() }
-                        }
                     }
                     if let error = registration.lastError {
                         Text(error).font(.callout).foregroundStyle(.red)

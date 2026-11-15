@@ -196,6 +196,9 @@ final class AppModel {
         prefsStore.prefs.lidClosedModeEnabled = enabled
         if enabled {
             lidRegistration.register()
+            // macOS doesn't always prompt (e.g. it already notified about this developer),
+            // so take the user straight to where approval happens.
+            if lidRegistration.status == .requiresApproval { lidRegistration.openLoginItems() }
         } else {
             Task {
                 await lidSession.settle()

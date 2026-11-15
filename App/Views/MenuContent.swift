@@ -115,7 +115,11 @@ struct MenuContent: View {
 
     private var problems: [String] {
         var result: [String] = []
-        if let error = model.lidSession.lastError, model.prefsStore.prefs.lidClosedModeEnabled {
+        if model.prefsStore.prefs.lidClosedModeEnabled, model.lidRegistration.status == .requiresApproval {
+            result.append("Lid-closed mode needs your approval in Login Items")
+        }
+        if let error = model.lidSession.lastError, model.prefsStore.prefs.lidClosedModeEnabled,
+           model.lidRegistration.status == .enabled {
             result.append(error.description)
         }
         if let error = model.assertionError {
