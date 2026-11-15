@@ -9,7 +9,7 @@ PRODUCT_BUNDLE_IDENTIFIER = com.westvold.ohmai
 // Versions. CURRENT_PROJECT_VERSION is the build number Sparkle compares:
 // monotonically increasing, never reused or decreased (bump with `agvtool next-version -all`).
 MARKETING_VERSION = 0.1.0
-CURRENT_PROJECT_VERSION = 1
+CURRENT_PROJECT_VERSION = 2
 VERSIONING_SYSTEM = apple-generic
 
 // Platform and language
