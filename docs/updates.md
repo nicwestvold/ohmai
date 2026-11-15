@@ -8,7 +8,11 @@ Why: while ohmai is private and mostly used by its author, Sparkle's cost (a thi
 
 Moving later: a private repo's release assets can't be fetched without a token (never ship one in the app), so Sparkle needs a public feed. If the repo goes public, its existing releases become downloadable and the appcast can live there. (A separate public `ohmai-releases` repo was considered and deleted; if the source stays private but Sparkle is wanted, that pattern works: a public repo holding only zips and the appcast.)
 
-**Replacing the app by hand (verified 2026-11-14):** the lid helper registered by the previous build keeps running from the previous bundle's path. The new app can still talk to it (the caller check matches team and bundle id), but the root process isn't the shipped code, and deleting the old bundle would break it. Users who use lid-closed mode must toggle it off and on after updating; the README says so. A future improvement: compare the helper's `version` reply with the app's build number at launch and offer to re-register.
+**Replacing the app by hand (verified 2026-11-14, builds 5 → 6 → 7):**
+- The lid helper's approval **survives** an in-place update (same path, same team and bundle id). So do launch at login and settings.
+- The *running* helper process doesn't change by itself: launchd keeps the old binary running. From build 6 on, the helper checks the build number embedded in its file on disk whenever ohmai connects; if it's newer, it turns sleep back on and exits cleanly, and launchd starts the new binary on ohmai's next request (verified: old helper released 21:58:46, new one started 21:59:09 and engaged 21:59:41).
+- Builds 1–5 lack that check, so moving off them needs the old helper stopped once (`sudo kill <pid>` or a reboot).
+- Pitfall found on the way: two apps with the same bundle id (a Debug build and the installed release) make macOS's background-item record flip between them, so approvals don't stick. Debug builds now use `com.westvold.ohmai.debug`, and the release script keeps no loose app copies.
 
 Everything below is the plan for when Sparkle is wired.
 

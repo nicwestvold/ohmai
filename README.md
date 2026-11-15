@@ -52,7 +52,7 @@ If you ever want to check: `pmset -g | grep -i sleepdisabled` shows 0 (or nothin
 
 Requires macOS 26 or later. Download the notarized zip from this repo's Releases, unzip it, and move `ohmai.app` to `/Applications`. ohmai opens at login by default (Settings → General).
 
-**Updating:** quit ohmai, replace `ohmai.app`, open it. If you use lid-closed mode, turn it off and on again in Settings → Lid Closed so macOS registers the new helper; until you do, the previous build's helper keeps running.
+**Updating:** quit ohmai, replace `ohmai.app` in `/Applications`, open it. Your settings, history and approvals carry over, and the lid helper switches to the new version on its own.
 
 ## Uninstall
 
