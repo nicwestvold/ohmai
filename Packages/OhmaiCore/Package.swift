@@ -12,6 +12,7 @@ let package = Package(
         .library(name: "OhmaiAdapterSupport", targets: ["OhmaiAdapterSupport"]),
         .library(name: "OhmaiClaudeAdapter", targets: ["OhmaiClaudeAdapter"]),
         .library(name: "OhmaiCodexAdapter", targets: ["OhmaiCodexAdapter"]),
+        .library(name: "OhmaiPiAdapter", targets: ["OhmaiPiAdapter"]),
     ],
     targets: [
         // Domain types, leases and the pure `Policy`. Foundation only: no I/O.
@@ -30,12 +31,23 @@ let package = Package(
         .target(name: "OhmaiClaudeAdapter", dependencies: ["OhmaiCore", "OhmaiAdapterSupport"]),
         // Codex: rollout files (undocumented); turn boundaries from line prefixes only.
         .target(name: "OhmaiCodexAdapter", dependencies: ["OhmaiCore", "OhmaiAdapterSupport"]),
+        // pi: status files written by ohmai's own pi extension (bundled as a resource).
+        .target(
+            name: "OhmaiPiAdapter",
+            dependencies: ["OhmaiCore", "OhmaiAdapterSupport"],
+            resources: [.copy("Resources/ohmai.ts")]
+        ),
         .testTarget(name: "OhmaiCoreTests", dependencies: ["OhmaiCore"]),
         .testTarget(name: "OhmaiPowerTests", dependencies: ["OhmaiPower", "OhmaiPowerSource"]),
         .testTarget(name: "OhmaiLidHelperCoreTests", dependencies: ["OhmaiLidHelperCore"]),
         .testTarget(
             name: "OhmaiClaudeAdapterTests",
             dependencies: ["OhmaiClaudeAdapter", "OhmaiAdapterSupport"],
+            resources: [.copy("Fixtures")]
+        ),
+        .testTarget(
+            name: "OhmaiPiAdapterTests",
+            dependencies: ["OhmaiPiAdapter", "OhmaiAdapterSupport"],
             resources: [.copy("Fixtures")]
         ),
         .testTarget(

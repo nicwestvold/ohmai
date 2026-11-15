@@ -421,6 +421,13 @@ What this means for ohmai:
 - **Process name:** `pgrep -x pi-rpc` matched the RPC process, so `process.title` is visible to macOS process lookups. Interactive sessions should match `pgrep -x pi`, but that hasn't been seen yet.
 - **Not yet testable:** `agent_start` / `agent_settled`, the `usage` schema in real messages, and the rate-limit headers from `after_provider_response`. All need a connected provider.
 
+### pi 1.5.2: ohmai's extension, verified end to end (2026-11-14)
+
+- ohmai ships its own extension (`Packages/OhmaiCore/Sources/OhmaiPiAdapter/Resources/ohmai.ts`). It writes `~/Library/Application Support/ohmai/pi/<pid>.json` (format `v: 1`: pid, processStart, startedAt, status, statusUpdatedAt, sessionId, sessionFile, cwd) on `session_start`, `agent_start`, `ui_prompt_start` / `ui_prompt_end` and `agent_settled`, and deletes it on `session_shutdown`. Atomic writes (tmp + rename). No timers, no network.
+- **Verified with a real prompt** (`pi -p -e ohmai.ts`, Anthropic auth): the file went `busy` and ohmai took an assertion within 0.5s; on exit the file was removed and the assertion released.
+- `agent_start` and `agent_settled` fire as documented in print mode. `ui_prompt_*` (waiting) is covered by unit tests only so far.
+- pi reads the same per-process status files as Claude through the shared `StatusRecordScanner`: pid liveness with the recorded process start, and the quiet limit uses the `sessionFile` modification time.
+
 ## Open questions
 
 
