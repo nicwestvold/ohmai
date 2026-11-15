@@ -89,21 +89,18 @@ struct GeneralTab: View {
                 }
             }
 
-            Section {
-                Toggle(isOn: automaticChecks) {
-                    Text("Check for updates automatically")
-                    if !model.updater.canCheckForUpdates {
-                        Footnote("Updates aren't available in this build.")
-                    }
+            // Only builds with an updater show this; v1 has none and makes no network calls.
+            if model.updater.canCheckForUpdates {
+                Section {
+                    Toggle("Check for updates automatically", isOn: automaticChecks)
                 }
-                .disabled(!model.updater.canCheckForUpdates)
             }
 
             Section {
                 LabeledContent("ohmai itself", value: footprint?.summary ?? "…")
                 LabeledContent("Version", value: Self.version)
             } footer: {
-                Text("Reads transcripts only for usage numbers. Never stores or sends what you wrote.")
+                Text("ohmai makes no network requests. It reads transcripts only for usage numbers and never stores what you wrote.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
