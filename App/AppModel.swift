@@ -5,6 +5,7 @@ import OhmaiAdapterSupport
 import OhmaiClaudeAdapter
 import OhmaiCodexAdapter
 import OhmaiPiAdapter
+import OhmaiLidXPC
 import OhmaiCore
 import OhmaiPower
 
@@ -195,7 +196,13 @@ final class AppModel {
     /// lid-closed mode on, they already consented: register again. If macOS wants approval,
     /// the Lid Closed tab and dropdown say so (no System Settings window at launch).
     private func restoreLidHelperIfNeeded() {
-        guard prefsStore.prefs.lidClosedModeEnabled, lidRegistration.status == .notRegistered else { return }
+        // macOS reports a dropped registration as either "not registered" or "not found".
+        // "Not found" can also mean a build without the helper (Debug): only re-register when
+        // this bundle actually contains the launchd plist.
+        let dropped = lidRegistration.status == .notRegistered || lidRegistration.status == .notFound
+        let bundled = FileManager.default.fileExists(atPath: Bundle.main.bundleURL
+            .appending(path: "Contents/Library/LaunchDaemons/\(LidHelperXPC.launchdPlistName)").path)
+        guard prefsStore.prefs.lidClosedModeEnabled, dropped, bundled else { return }
         lidRegistration.register()
     }
 
