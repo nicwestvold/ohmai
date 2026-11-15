@@ -14,6 +14,7 @@ let package = Package(
         .library(name: "OhmaiCodexAdapter", targets: ["OhmaiCodexAdapter"]),
         .library(name: "OhmaiPiAdapter", targets: ["OhmaiPiAdapter"]),
         .library(name: "OhmaiUsage", targets: ["OhmaiUsage"]),
+        .library(name: "OhmaiTranscripts", targets: ["OhmaiTranscripts"]),
     ],
     targets: [
         // Domain types, leases and the pure `Policy`. Foundation only: no I/O.
@@ -41,6 +42,9 @@ let package = Package(
         // Usage records, the bundled price table, month-over-month comparison. Pure.
         .target(name: "OhmaiUsage", dependencies: ["OhmaiCore"], resources: [.copy("Resources/prices.json")]),
         .testTarget(name: "OhmaiUsageTests", dependencies: ["OhmaiUsage"]),
+        // THE privacy boundary: the only module that reads transcripts. Returns usage records only.
+        .target(name: "OhmaiTranscripts", dependencies: ["OhmaiCore", "OhmaiUsage"]),
+        .testTarget(name: "OhmaiTranscriptsTests", dependencies: ["OhmaiTranscripts"], resources: [.copy("Fixtures")]),
         .testTarget(name: "OhmaiCoreTests", dependencies: ["OhmaiCore"]),
         .testTarget(name: "OhmaiPowerTests", dependencies: ["OhmaiPower", "OhmaiPowerSource"]),
         .testTarget(name: "OhmaiLidHelperCoreTests", dependencies: ["OhmaiLidHelperCore"]),
