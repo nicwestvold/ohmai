@@ -1,0 +1,27 @@
+{
+  "pid": 4242,
+  "sessionId": "00000000-0000-4000-8000-000000000001",
+  "cwd": "/Users/example/projects/demo",
+  "startedAt": 1794689789293,
+  "procStart": "Sat Nov 14 20:56:27 2026",
+  "version": "2.1.325",
+  "peerProtocol": 1,
+  "peerFeatures": [
+    "notify_idle",
+    "reply_across_default_dirs",
+    "artifact_yield"
+  ],
+  "kind": "interactive",
+  "entrypoint": "cli",
+  "pidDomain": "darwin",
+  "asksForConvertedSkills": false,
+  "tmux": "",
+  "messagingSocketPath": "/tmp/example.sock",
+  "name": "placeholder-name",
+  "nameSource": "derived",
+  "nameSince": 1794689789293,
+  "status": "waiting",
+  "updatedAt": 1794702374093,
+  "statusUpdatedAt": 1794702374093,
+  "waitingFor": "dialog open"
+}

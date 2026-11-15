@@ -9,6 +9,7 @@ let package = Package(
         .library(name: "OhmaiPower", targets: ["OhmaiPower"]),
         .library(name: "OhmaiLidXPC", targets: ["OhmaiLidXPC"]),
         .library(name: "OhmaiLidHelperCore", targets: ["OhmaiLidHelperCore"]),
+        .library(name: "OhmaiClaudeAdapter", targets: ["OhmaiClaudeAdapter"]),
     ],
     targets: [
         // Domain types, leases and the pure `Policy`. Foundation only: no I/O.
@@ -21,8 +22,17 @@ let package = Package(
         .target(name: "OhmaiPower", dependencies: ["OhmaiCore", "OhmaiPowerSource", "OhmaiLidXPC"]),
         // Everything the root lid helper does, minus `main`. Runs as root: keep it small.
         .target(name: "OhmaiLidHelperCore", dependencies: ["OhmaiCore", "OhmaiPowerSource", "OhmaiLidXPC"]),
+        // Shared by adapters: process liveness and start time, exit and directory watchers.
+        .target(name: "OhmaiAdapterSupport"),
+        // Claude Code: `~/.claude/sessions/<pid>.json` (undocumented) plus pid liveness.
+        .target(name: "OhmaiClaudeAdapter", dependencies: ["OhmaiCore", "OhmaiAdapterSupport"]),
         .testTarget(name: "OhmaiCoreTests", dependencies: ["OhmaiCore"]),
         .testTarget(name: "OhmaiPowerTests", dependencies: ["OhmaiPower", "OhmaiPowerSource"]),
         .testTarget(name: "OhmaiLidHelperCoreTests", dependencies: ["OhmaiLidHelperCore"]),
+        .testTarget(
+            name: "OhmaiClaudeAdapterTests",
+            dependencies: ["OhmaiClaudeAdapter", "OhmaiAdapterSupport"],
+            resources: [.copy("Fixtures")]
+        ),
     ]
 )

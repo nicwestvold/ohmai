@@ -375,6 +375,10 @@ function YEe(h){
 - **It's undocumented and could change in any release.** Use it as the primary activity source, with hooks as a cross-check and a fallback if the file disappears.
 - **Interrupt markers in transcripts:** `[Request interrupted by user]` and `[Request interrupted by user for tool use]`. `system` entries with `subtype: "turn_duration"` mark ends of turns and carry `pendingBackgroundAgentCount`.
 - Still unverified: whether `Notification(idle_prompt)` fires after an interrupt. It's no longer needed.
+- **No heartbeat writes.** While a session stays `busy`, the file isn't rewritten at all (`updatedAt` didn't move for over a minute of continuous work). Watching for file changes alone can't renew a lease, so the adapter re-reads the directory every 30s while any session is busy or waiting.
+- **`procStart`** is the process start time as a ctime-style string **in UTC** (e.g. `Sat Nov 14 20:56:27 2026`), matching `TZ=UTC ps -o lstart`. **`startedAt`** (epoch ms) is about 2s after the kernel's process start. Either one detects a reused pid: compare with `sysctl(KERN_PROC_PID)`'s `p_starttime`.
+- Other fields seen in 2.1.325: `startedAt`, `procStart`, `pidDomain`, `peerProtocol`, `peerFeatures`, `tmux`, `nameSource`, `nameSince`, `asksForConvertedSkills`. Each `<pid>.json` sits next to a `<pid>.<hash>.key` file, which ohmai never reads.
+- **`name` is derived from the conversation**, so ohmai treats it as message content and never reads it.
 
 ### Codex 0.169.0: hooks work, but untrusted hooks silently don't run
 
@@ -409,6 +413,8 @@ What this means for ohmai:
 - **Not yet testable:** `agent_start` / `agent_settled`, the `usage` schema in real messages, and the rate-limit headers from `after_provider_response`. All need a connected provider.
 
 ## Open questions
+
+- [ ] Claude: a process that stays alive with `status: busy` stuck (a Claude bug) would keep the Mac awake until Claude exits. Busy leases have no cap by design (legitimate background work can run for hours). Decide whether to cap them, e.g. by requiring transcript writes within some window, or by adding the hooks cross-check.
 
 - [ ] Codex: does `Stop` fire on turns that end in an error? Can a passive app-server client observe TUI threads?
 - [ ] pi: once a provider is connected, check agent events, the message `usage` schema, and rate-limit headers.
