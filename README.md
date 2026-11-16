@@ -27,7 +27,7 @@ Claude's and Codex's files are undocumented formats, so an agent update can chan
 
 ## Install
 
-Requires macOS 26 or later. Download the notarized zip from this repo's Releases, unzip it, and move `ohmai.app` to `/Applications`. ohmai opens at login by default (Settings → General).
+Requires macOS 26 or later. Download the notarized disk image (`.dmg`) from this repo's Releases, open it, and drag ohmai to Applications. ohmai opens at login by default (Settings → General).
 
 **Updating:** quit ohmai, replace `ohmai.app` in `/Applications`, open it. Your settings, history and approvals carry over, and the lid helper switches to the new version on its own.
 
@@ -75,7 +75,7 @@ mise run build        # generates ohmai.xcodeproj and builds Debug
 
 To sign with your own Apple team, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and set `OHMAI_TEAM_ID`. The lid helper's caller check is built from that value.
 
-Releases: `mise run release` archives, signs with Developer ID, notarizes, staples and zips (see `scripts/release.sh`).
+Releases: `mise run release` archives, signs with Developer ID, notarizes and staples the app, then builds a signed, notarized and stapled disk image (see `scripts/release.sh`).
 
 ## Docs
 

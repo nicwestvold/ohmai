@@ -2,7 +2,7 @@
 
 ohmai will update itself with [Sparkle 2](https://sparkle-project.org), the open-source (MIT) update framework most directly distributed Mac apps use. This doc covers how the app is prepared for it now, and what remains to wire it up later.
 
-**Status: deferred (decided 2026-11-14).** v1 ships without Sparkle, so ohmai makes **no network requests at all**. Releases are notarized zips attached to GitHub releases on the private `nicwestvold/ohmai` repo (`mise run release`, then `mise run publish`), installed by hand. The update *seam* and its no-op implementation stay in place.
+**Status: deferred (decided 2026-11-14).** v1 ships without Sparkle, so ohmai makes **no network requests at all**. Releases are notarized disk images (`.dmg`) attached to GitHub releases on the private `nicwestvold/ohmai` repo (`mise run release`, then `mise run publish`), installed by hand. The update *seam* and its no-op implementation stay in place.
 
 Why: while ohmai is private and mostly used by its author, Sparkle's cost (a third-party dependency next to a root helper, an EdDSA key to guard forever, a public feed, and a network call that weakens the privacy promise) outweighs automatic updates. Revisit if ohmai goes open source or gains users who won't update by hand. A Homebrew cask is the step before Sparkle: updates via `brew`, still no network code in ohmai.
 
@@ -93,7 +93,7 @@ Switching between them is just a change to `SUFeedURL`, plus where the release s
   1. [x] archive
   2. [x] Developer ID sign (app + helper, hardened runtime), verified: team, runtime flag, no `get-task-allow`, helper plist present
   3. [x] notarize (`notarytool --keychain-profile ohmai-notary`) + staple + Gatekeeper check. First accepted build: 0.1.0 (1), 2026-11-14.
-  4. [x] zip (+ SHA-256)
+  4. [x] disk image (`.dmg` with an Applications shortcut), itself signed, notarized and stapled (+ SHA-256). Releases were zips up to build 11.
   5. [ ] `generate_appcast` (signs entries)
   6. [ ] upload archive + appcast
   - It refuses a dirty tree and a build number not above the latest `build-*` tag.

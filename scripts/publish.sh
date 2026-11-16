@@ -1,5 +1,5 @@
 #!/bin/bash
-# Attaches the built zip for the current build to a GitHub release on the private repo.
+# Attaches the built disk image for the current build to a GitHub release on the private repo.
 #   scripts/publish.sh   (after scripts/release.sh and pushing the build-<N> tag)
 # Never pushes: the tag must already be on GitHub, so publishing is always deliberate.
 set -euo pipefail
@@ -13,14 +13,14 @@ setting() {
 VERSION=$(setting MARKETING_VERSION)
 BUILD=$(setting CURRENT_PROJECT_VERSION)
 NAME="ohmai-${VERSION}-${BUILD}"
-ZIP="build/release/${NAME}.zip"
+DMG="build/release/${NAME}.dmg"
 TAG="build-${BUILD}"
 
-[[ -f "$ZIP" ]] || { echo "error: $ZIP not found; run mise run release first" >&2; exit 1; }
+[[ -f "$DMG" ]] || { echo "error: $DMG not found; run mise run release first" >&2; exit 1; }
 git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1 \
   || { echo "error: tag ${TAG} isn't on origin. Tag the released commit and push it first:" >&2
        echo "  git tag ${TAG} && git push origin ${TAG}" >&2; exit 1; }
 
-gh release create "$TAG" "$ZIP" "${ZIP}.sha256" --repo "$REPO" --verify-tag \
+gh release create "$TAG" "$DMG" "${DMG}.sha256" --repo "$REPO" --verify-tag \
   --title "ohmai ${VERSION} (${BUILD})" \
-  --notes "Signed and notarized. Unzip and move ohmai.app to /Applications. SHA-256 in the attached .sha256 file."
+  --notes "Signed and notarized disk image. Open it and drag ohmai to Applications. SHA-256 in the attached .sha256 file."

@@ -76,10 +76,10 @@ Main components:
 `CFBundleVersion` is a monotonically increasing build number (Sparkle depends on it). Never reuse or decrease it.
 
 ### Releases
-- `mise run release` runs `scripts/release.sh`: archive, Developer ID export, signature checks, notarize, staple, Gatekeeper check, zip. `mise run release-check` stops before uploading to Apple.
+- `mise run release` runs `scripts/release.sh`: archive, Developer ID export, signature checks, notarize and staple the app, then a disk image (`.dmg`, with an Applications shortcut) that's signed, notarized and stapled too, plus its SHA-256. `mise run release-check` stops before uploading to Apple.
 - Notarization credentials live in the login keychain as the notarytool profile `ohmai-notary` (override with `NOTARY_PROFILE`). Never put credentials in the repo.
 - After a release, tag it `build-<N>` and bump `CURRENT_PROJECT_VERSION`.
-- `mise run publish` attaches the zip to a GitHub release on the private `nicwestvold/ohmai` repo. It needs the `build-<N>` tag already pushed and never pushes anything itself; pushing is the user's call.
+- `mise run publish` attaches the disk image to a GitHub release on the private `nicwestvold/ohmai` repo. It needs the `build-<N>` tag already pushed and never pushes anything itself; pushing is the user's call.
 
 ## Layout and build
 

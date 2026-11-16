@@ -34,7 +34,7 @@ For each agent's hooks and data formats, see [agent-integrations.md](agent-integ
   - It makes **no network calls at all** in v1. Updates are manual (below).
   - Promise this in the README, and keep it true in the code: a single module owns transcript parsing and returns only usage records.
 - **Pricing:** a per-model price table bundled with the app and updated with releases. Nothing is fetched.
-- **Updates (decided 2026-11-14):** no in-app updates in v1. Notarized zips are attached to GitHub releases on the **private** `nicwestvold/ohmai` repo and installed by hand. This keeps the privacy promise absolute: **"ohmai makes no network requests."** The `Updater` seam (with `NoopUpdater`) stays, so Sparkle can be added later without refactoring, most likely if ohmai becomes open source. The plan for that is in [updates.md](updates.md).
+- **Updates (decided 2026-11-14):** no in-app updates in v1. Notarized disk images (`.dmg`) are attached to GitHub releases on the **private** `nicwestvold/ohmai` repo and installed by hand. This keeps the privacy promise absolute: **"ohmai makes no network requests."** The `Updater` seam (with `NoopUpdater`) stays, so Sparkle can be added later without refactoring, most likely if ohmai becomes open source. The plan for that is in [updates.md](updates.md).
 - **Testing:**
   - The `Policy` and lease logic get pure unit tests.
   - Each adapter is tested against fixture files built from real session files, with message content replaced. When an agent update changes its format, it should show up as a failing test, not as wrong numbers.
@@ -110,7 +110,7 @@ The **dropdown** (built, 2026-11-15) is about agents and usage; it never mention
 - **Watchers:** FSEvents over the transcript and rollout directories. Imports are incremental: store a byte offset per file and never re-read from the start.
 - **Distribution:** built for personal use first, possibly open-sourced later. It can't use the App Store sandbox, because it reads `~/.claude`, `~/.codex` and `~/.pi`.
   - **Signing:** the user's existing paid Developer ID account. Register app IDs for the app and the lid helper, and sign with Developer ID Application + notarization from day one, so builds behave like release builds (helper approval, Gatekeeper).
-  - **Releases:** signed and notarized DMG/zip, with the Sparkle appcast hosted alongside (e.g. GitHub Releases). A Homebrew cask can point at the same artifacts.
+  - **Releases:** a signed and notarized DMG (Sparkle, once wired, would publish an appcast alongside) (e.g. GitHub Releases). A Homebrew cask can point at the same artifacts.
   - **If open-sourced:** People building from source sign with their own team ID, so the helper's code-signing requirement must take the team ID from build settings, not hard-code it.
 
 ## Activity and leases
