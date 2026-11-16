@@ -1,4 +1,4 @@
-# XcodeGen spec. Generate the project with `make project` (ohmai.xcodeproj is not committed).
+# XcodeGen spec. Generate the project with `mise run project` (ohmai.xcodeproj is not committed).
 name: ohmai
 options:
   deploymentTarget:

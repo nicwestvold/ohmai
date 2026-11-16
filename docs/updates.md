@@ -2,7 +2,7 @@
 
 ohmai will update itself with [Sparkle 2](https://sparkle-project.org), the open-source (MIT) update framework most directly distributed Mac apps use. This doc covers how the app is prepared for it now, and what remains to wire it up later.
 
-**Status: deferred (decided 2026-11-14).** v1 ships without Sparkle, so ohmai makes **no network requests at all**. Releases are notarized zips attached to GitHub releases on the private `nicwestvold/ohmai` repo (`make release`, then `make publish`), installed by hand. The update *seam* and its no-op implementation stay in place.
+**Status: deferred (decided 2026-11-14).** v1 ships without Sparkle, so ohmai makes **no network requests at all**. Releases are notarized zips attached to GitHub releases on the private `nicwestvold/ohmai` repo (`mise run release`, then `mise run publish`), installed by hand. The update *seam* and its no-op implementation stay in place.
 
 Why: while ohmai is private and mostly used by its author, Sparkle's cost (a third-party dependency next to a root helper, an EdDSA key to guard forever, a public feed, and a network call that weakens the privacy promise) outweighs automatic updates. Revisit if ohmai goes open source or gains users who won't update by hand. A Homebrew cask is the step before Sparkle: updates via `brew`, still no network code in ohmai.
 
@@ -89,7 +89,7 @@ Switching between them is just a change to `SUFeedURL`, plus where the release s
 - [ ] Generate the EdDSA key pair with Sparkle's `generate_keys`. The private key goes in the login Keychain plus a CI secret, **backed up**: losing it means existing installs can't verify updates.
 - [ ] Info.plist: `SUFeedURL`, `SUPublicEDKey`, `SUEnableAutomaticChecks = true`, `SUEnableSystemProfiling = false`
 - [ ] Preview builds: a separate scheme or config with the preview `SUFeedURL`. Alternatively, let users pick a channel via `feedURLString(for:)` / allowed channels.
-- [ ] Release script (`scripts/release.sh`, `make release`; `make release-check` skips the upload):
+- [ ] Release script (`scripts/release.sh`, `mise run release`; `mise run release-check` skips the upload):
   1. [x] archive
   2. [x] Developer ID sign (app + helper, hardened runtime), verified: team, runtime flag, no `get-task-allow`, helper plist present
   3. [x] notarize (`notarytool --keychain-profile ohmai-notary`) + staple + Gatekeeper check. First accepted build: 0.1.0 (1), 2026-11-14.

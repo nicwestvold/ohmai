@@ -76,10 +76,10 @@ Main components:
 `CFBundleVersion` is a monotonically increasing build number (Sparkle depends on it). Never reuse or decrease it.
 
 ### Releases
-- `make release` runs `scripts/release.sh`: archive, Developer ID export, signature checks, notarize, staple, Gatekeeper check, zip. `make release-check` stops before uploading to Apple.
+- `mise run release` runs `scripts/release.sh`: archive, Developer ID export, signature checks, notarize, staple, Gatekeeper check, zip. `mise run release-check` stops before uploading to Apple.
 - Notarization credentials live in the login keychain as the notarytool profile `ohmai-notary` (override with `NOTARY_PROFILE`). Never put credentials in the repo.
 - After a release, tag it `build-<N>` and bump `CURRENT_PROJECT_VERSION`.
-- `make publish` attaches the zip to a GitHub release on the private `nicwestvold/ohmai` repo. It needs the `build-<N>` tag already pushed and never pushes anything itself; pushing is the user's call.
+- `mise run publish` attaches the zip to a GitHub release on the private `nicwestvold/ohmai` repo. It needs the `build-<N>` tag already pushed and never pushes anything itself; pushing is the user's call.
 
 ## Layout and build
 
@@ -91,8 +91,9 @@ Main components:
 | `Config/*.xcconfig` | Signing, versions, `OHMAI_TEAM_ID`, `OHMAI_UPDATES_ENABLED`. Per-developer overrides go in `Config/Local.xcconfig` (gitignored). |
 | `project.yml` | XcodeGen spec. `ohmai.xcodeproj` is generated, not committed. |
 
-- `make test` runs the package tests (`swift test`); it's fast and needs no Xcode project.
-- `make project` regenerates the Xcode project; `make build` builds the app.
+- Tools are pinned in `mise.toml` (xcodegen, gh, node); run `mise install` once. Tasks: `mise tasks`.
+- `mise run test` runs the package tests (`swift test`); it's fast and needs no Xcode project.
+- `mise run project` regenerates the Xcode project; `mise run build` builds the app. `mise run icons` regenerates the Ω artwork (needs `brew install librsvg`).
 - Debug builds are `com.westvold.ohmai.debug`: own preferences, own `ledger-debug.sqlite`, and no lid helper (release-only). Never run two builds with the same bundle ID at once: macOS's background-item record for the helper flips between them and its approval won't stick.
 - Debug builds read `OHMAI_CLAUDE_SESSIONS_DIR`, `OHMAI_CODEX_SESSIONS_DIR` and `OHMAI_PI_STATUS_DIR` to point the adapters at scratch directories, for manual testing without touching real agent data. `OHMAI_SNAPSHOT_DIR` renders the dropdown and Settings tabs to PNG (light and dark) and quits. `OHMAI_LEDGER_DB` points the usage ledger at a scratch database.
 - Try the pi extension without installing it: `pi -p --no-session -e Packages/OhmaiCore/Sources/OhmaiPiAdapter/Resources/ohmai.ts "…"`.

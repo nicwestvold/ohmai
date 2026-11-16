@@ -1,0 +1,42 @@
+# Tools and tasks for ohmai. `mise install` once, then `mise run <task>` (or `mise tasks`).
+# Swift and Xcode come from the system (Xcode 27). Regenerating icons also needs
+# rsvg-convert, which isn't in mise's registry: `brew install librsvg`.
+
+[tools]
+xcodegen = "2.46.0"
+gh = "2.104.0"
+node = "24"  # only for trying the pi extension (see CLAUDE.md)
+
+[tasks.test]
+description = "Run the package tests (fast; no Xcode project needed)"
+dir = "Packages/OhmaiCore"
+run = "swift test"
+
+[tasks.project]
+description = "Generate ohmai.xcodeproj from project.yml"
+run = "xcodegen generate"
+
+[tasks.build]
+description = "Build the Debug app (com.westvold.ohmai.debug)"
+depends = ["project"]
+run = "xcodebuild -project ohmai.xcodeproj -scheme ohmai -configuration Debug -derivedDataPath build build"
+
+[tasks.release]
+description = "Archive, Developer ID sign, notarize, staple and zip into build/release/"
+run = "scripts/release.sh"
+
+[tasks.release-check]
+description = "Like release, but stops before uploading to Apple"
+run = "scripts/release.sh --no-notarize"
+
+[tasks.publish]
+description = "Attach the built zip to a GitHub release (needs the build-<N> tag pushed)"
+run = "scripts/publish.sh"
+
+[tasks.icons]
+description = "Regenerate the Ω face artwork from scripts/make-icons.py (needs rsvg-convert)"
+run = "scripts/make-icons.py"
+
+[tasks.clean]
+description = "Remove generated and build output"
+run = "rm -rf ohmai.xcodeproj Packages/OhmaiCore/.build build"

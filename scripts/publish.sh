@@ -16,7 +16,7 @@ NAME="ohmai-${VERSION}-${BUILD}"
 ZIP="build/release/${NAME}.zip"
 TAG="build-${BUILD}"
 
-[[ -f "$ZIP" ]] || { echo "error: $ZIP not found; run make release first" >&2; exit 1; }
+[[ -f "$ZIP" ]] || { echo "error: $ZIP not found; run mise run release first" >&2; exit 1; }
 git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1 \
   || { echo "error: tag ${TAG} isn't on origin. Tag the released commit and push it first:" >&2
        echo "  git tag ${TAG} && git push origin ${TAG}" >&2; exit 1; }

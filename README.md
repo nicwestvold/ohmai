@@ -65,16 +65,17 @@ To check at any time: `pmset -g | grep -i sleepdisabled` shows 0 (or nothing) wh
 
 ## Build from source
 
-Needs Xcode 27 and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+Needs Xcode 27 and [mise](https://mise.jdx.dev), which installs the pinned tools (XcodeGen, gh):
 
 ```sh
-make test       # package tests (fast, no Xcode project needed)
-make build      # generates ohmai.xcodeproj and builds Debug
+mise install          # once: pinned tools from mise.toml
+mise run test         # package tests (fast, no Xcode project needed)
+mise run build        # generates ohmai.xcodeproj and builds Debug
 ```
 
 To sign with your own Apple team, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig` and set `OHMAI_TEAM_ID`. The lid helper's caller check is built from that value.
 
-Releases: `make release` archives, signs with Developer ID, notarizes, staples and zips (see `scripts/release.sh`).
+Releases: `mise run release` archives, signs with Developer ID, notarizes, staples and zips (see `scripts/release.sh`).
 
 ## Docs
 
