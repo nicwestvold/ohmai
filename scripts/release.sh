@@ -40,7 +40,7 @@ rm -rf "$OUT"
 mkdir -p "$OUT"
 echo "ohmai ${VERSION} (${BUILD}), team ${TEAM}, commit $(git rev-parse --short HEAD)"
 
-# Sparkle compares CFBundleVersion: never reuse or decrease it.
+# CFBundleVersion only ever goes up: never reuse or decrease it.
 if git tag --list "build-*" | sed 's/build-//' | awk -v b="$BUILD" '$1 >= b {found=1} END {exit !found}'; then
   fail "build number ${BUILD} isn't higher than an existing build-* tag; bump CURRENT_PROJECT_VERSION in Config/Shared.xcconfig"
 fi

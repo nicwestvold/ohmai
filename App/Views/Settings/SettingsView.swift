@@ -76,13 +76,6 @@ struct GeneralTab: View {
                 }
             }
 
-            // Only builds with an updater show this; v1 has none and makes no network calls.
-            if model.updater.canCheckForUpdates {
-                Section {
-                    Toggle("Check for updates automatically", isOn: automaticChecks)
-                }
-            }
-
             Section {
                 LabeledContent("Memory and disk", value: footprint?.summary ?? "…")
             } footer: {
@@ -113,13 +106,6 @@ struct GeneralTab: View {
 
     private var launchAtLogin: Binding<Bool> {
         Binding(get: { model.launchAtLogin.enabled }, set: { model.launchAtLogin.set($0) })
-    }
-
-    private var automaticChecks: Binding<Bool> {
-        Binding(
-            get: { model.updater.automaticallyChecksForUpdates },
-            set: { model.updater.automaticallyChecksForUpdates = $0 }
-        )
     }
 
     private static var version: String {

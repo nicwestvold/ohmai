@@ -6,7 +6,7 @@ A macOS menu bar app that shows your AI coding agents (Claude Code, Codex, pi) a
 
 - `docs/design.md`: v1 scope, domain terms, architecture, power policy, lid-closed mode, UI, icon, build order. **This is the source of truth.** If code and doc disagree, raise it; don't silently diverge.
 - `docs/agent-integrations.md`: how each agent signals busy/idle and where usage data lives, with verified findings and open questions.
-- `docs/updates.md`: updates are deferred (no Sparkle in v1); the plan for adding it later, behind the `Updater` seam.
+- `docs/updates.md`: no in-app updates, by design; manual updates, the helper's stale-binary restart, version numbers and the release script.
 
 When a decision changes, update the relevant doc in the same change.
 
@@ -15,7 +15,7 @@ When a decision changes, update the relevant doc in the same change.
 - Swift 6 (strict concurrency), SwiftUI `MenuBarExtra`, `LSUIElement` (no Dock icon)
 - macOS 26+, Xcode 27
 - Not sandboxed (it reads `~/.claude`, `~/.codex`, `~/.pi`). Hardened runtime on.
-- Swift Package Manager for dependencies. Keep them minimal: Sparkle later, SQLite via the system library or a small wrapper.
+- Swift Package Manager for dependencies. Keep them minimal: SQLite via the system library or a small wrapper.
 
 ## Identity and signing
 
@@ -45,7 +45,6 @@ Main components:
 - `Policy`: **pure** `decide(leases:power:prefs:now:) -> Decision`. No I/O, fully unit-tested.
 - `PowerMonitor` (IOKit power sources, Low Power Mode, thermal state) and `AssertionManager` (IOPMAssertion + lid helper client)
 - Adapters turn hooks and file changes into `ActivityEvent`s and Ledger records. One adapter per agent, isolated from the others.
-- `Updater` protocol, with `NoopUpdater` until Sparkle is wired. Only `SparkleUpdater` may import Sparkle.
 
 ## Rules that matter
 
@@ -53,7 +52,7 @@ Main components:
 - ohmai reads transcripts that contain the user's code and prompts. Parsing code extracts **only** usage numbers and session metadata (agent, model, project path, timestamps, token counts).
 - Never store, log or display message content.
 - Keep all transcript parsing in one module whose public API returns only usage records.
-- **No network calls. At all.** ohmai v1 makes no network requests (Sparkle is deferred; see `docs/updates.md`). Don't add analytics, crash reporting, remote price fetching, or update checks.
+- **No network calls. At all.** ohmai makes no network requests, and has no in-app updater (see `docs/updates.md`). Don't add analytics, crash reporting, remote price fetching, or update checks.
 
 ### Keeping the Mac awake safely
 - Every lease must expire (signal timeout, pid liveness + start-time check).
@@ -73,22 +72,22 @@ Main components:
 - Cross-check with a second signal: for Claude, pid liveness plus transcript modification times. (No Claude hooks plugin in v1. Codex hooks are optional, for approval-waiting.)
 
 ### Version numbers
-`CFBundleVersion` is a monotonically increasing build number (Sparkle depends on it). Never reuse or decrease it.
+`CFBundleVersion` is a monotonically increasing build number (the helper's stale-binary check and the release script depend on it). Never reuse or decrease it.
 
 ### Releases
 - `mise run release` runs `scripts/release.sh`: archive, Developer ID export, signature checks, notarize and staple the app, then a disk image (`.dmg`, with an Applications shortcut) that's signed, notarized and stapled too, plus its SHA-256. `mise run release-check` stops before uploading to Apple.
 - Notarization credentials live in the login keychain as the notarytool profile `ohmai-notary` (override with `NOTARY_PROFILE`). Never put credentials in the repo.
 - After a release, tag it `build-<N>` and bump `CURRENT_PROJECT_VERSION`.
-- `mise run publish` attaches the disk image to a GitHub release on the private `nicwestvold/ohmai` repo. It needs the `build-<N>` tag already pushed and never pushes anything itself; pushing is the user's call.
+- `mise run publish` attaches the disk image to a GitHub release on the `nicwestvold/ohmai` repo. It needs the `build-<N>` tag already pushed and never pushes anything itself; pushing is the user's call.
 
 ## Layout and build
 
 | Path | What |
 |---|---|
 | `Packages/OhmaiCore` | Local Swift package. `OhmaiCore`: domain types, leases and `Policy`, Foundation only, no I/O. `OhmaiPower`: `PowerMonitor`, `AssertionManager` (IOKit), the lid helper client and `LidSession`. `OhmaiLidXPC`: the XPC contract. `OhmaiLidHelperCore`: everything the root helper does (`LidController` is the dead-man switch). `OhmaiPowerSource`: battery and thermal reading, shared with the helper. `OhmaiAdapterSupport`: pid liveness and start time, exit and directory watchers. `OhmaiClaudeAdapter`, `OhmaiCodexAdapter`, `OhmaiPiAdapter`: one adapter per agent, each its own target. Claude and pi share `StatusDirectoryAdapter` / `StatusRecordScanner` (per-process status files). pi's extension ships as a resource in `OhmaiPiAdapter`. `OhmaiUsage`: usage records, the bundled `prices.json`, month comparison. `OhmaiTranscripts`: **the only module that parses transcripts**; public API returns `UsageRecord`s only. `OhmaiLedger`: SQLite store and incremental importer. |
-| `App/` | The app target: composition root, `AppModel`, SwiftUI views, the `Updater` seam, helper registration |
+| `App/` | The app target: composition root, `AppModel`, SwiftUI views, helper registration |
 | `LidHelper/` | The root helper's `main.swift` (wiring only), its Info.plist and launchd plist |
-| `Config/*.xcconfig` | Signing, versions, `OHMAI_TEAM_ID`, `OHMAI_UPDATES_ENABLED`. Per-developer overrides go in `Config/Local.xcconfig` (gitignored). |
+| `Config/*.xcconfig` | Signing, versions, `OHMAI_TEAM_ID`. Per-developer overrides go in `Config/Local.xcconfig` (gitignored). |
 | `project.yml` | XcodeGen spec. `ohmai.xcodeproj` is generated, not committed. |
 
 - Tools are pinned in `mise.toml` (xcodegen, gh, node); run `mise install` once. Tasks: `mise tasks`.

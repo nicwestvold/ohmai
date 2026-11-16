@@ -123,14 +123,6 @@ struct MenuContent: View {
 
     private var footer: some View {
         VStack(spacing: 0) {
-            if model.updater.canCheckForUpdates {
-                Button {
-                    dismiss()
-                    model.updater.checkForUpdates()
-                } label: {
-                    MenuRowLabel(title: "Check for Updates…", systemImage: "arrow.down.circle")
-                }
-            }
             Button {
                 dismiss()  // close the dropdown, like a native menu does
                 SettingsWindow.shared.show(model: model)

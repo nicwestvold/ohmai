@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct OhmaiApp: App {
-    @State private var model = AppModel(updater: makeUpdater())
+    @State private var model = AppModel()
 
     var body: some Scene {
         MenuBarExtra {

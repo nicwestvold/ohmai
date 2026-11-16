@@ -1,5 +1,5 @@
 #!/bin/bash
-# Attaches the built disk image for the current build to a GitHub release on the private repo.
+# Attaches the built disk image for the current build to a GitHub release on the repo.
 #   scripts/publish.sh   (after scripts/release.sh and pushing the build-<N> tag)
 # Never pushes: the tag must already be on GitHub, so publishing is always deliberate.
 set -euo pipefail

@@ -23,7 +23,6 @@ enum MenuBarIconState: Equatable {
 final class AppModel {
     let prefsStore: PrefsStore
     let power: PowerMonitor
-    let updater: any Updater
     let lidRegistration: LidHelperRegistration
     let lidSession: LidSession
     let usage = UsageModel()
@@ -46,7 +45,6 @@ final class AppModel {
     private static let expiryTolerance: Duration = .seconds(2)
 
     init(
-        updater: any Updater,
         prefsStore: PrefsStore = PrefsStore(),
         power: PowerMonitor = PowerMonitor(),
         assertions: AssertionManager = AssertionManager(),
@@ -56,7 +54,6 @@ final class AppModel {
         codex: CodexRolloutAdapter = AppModel.makeCodexAdapter(),
         pi: StatusDirectoryAdapter = AppModel.makePiAdapter()
     ) {
-        self.updater = updater
         self.prefsStore = prefsStore
         self.power = power
         self.assertions = assertions
