@@ -82,3 +82,7 @@ Releases: `mise run release` archives, signs with Developer ID, notarizes and st
 - [`docs/design.md`](docs/design.md): scope, architecture, power policy, lid-closed mode, performance budget
 - [`docs/agent-integrations.md`](docs/agent-integrations.md): how each agent's state and usage are read, with verified findings
 - [`docs/updates.md`](docs/updates.md): why there are no in-app updates, and how updating by hand works
+
+## License
+
+MIT. See [LICENSE](LICENSE).
