@@ -1,8 +1,11 @@
 # ohmai: design
 
 ohmai ("oh my ai") is a macOS menu bar app that:
-1. **Keeps the Mac awake while an AI agent is working**, within a power policy you control.
-2. **Tracks token usage and plan-limit position** for Claude Code, Codex and pi.
+1. **Shows your AI coding agents at a glance**: which Claude Code, Codex and pi sessions are working or waiting on you.
+2. **Tracks token usage and estimated cost**, this month against last month (plan-limit position later).
+3. **Optionally prevents idle sleep while an agent works** (Settings → Advanced), within a power policy you control, plus an opt-in lid-closed mode.
+
+**Positioning (decided 2026-11-14):** the product is the dashboard. Idle-sleep prevention and lid-closed mode are real, documented and safe, but secondary: they live under Settings → Advanced with factual wording, and the dropdown never talks about power. Public descriptions don't mention keeping the Mac awake.
 
 For each agent's hooks and data formats, see [agent-integrations.md](agent-integrations.md).
 
@@ -50,28 +53,32 @@ The generic state list below still applies:
 - dot badge: an agent is waiting on you
 - distinct icon: ohmai is holding the Mac awake (lid-closed mode gets its own variant)
 
-The **dropdown** shows what's running and the month's token usage. Keep-awake controls stay in the background:
+The **dropdown** (built, 2026-11-15) is about agents and usage; it never mentions power:
 
 ```
- Running
-   ● Claude Code   ohmai/        busy 4m
-   ● Codex         gwt/          waiting on you
- ───────────────────────────────────────────
- November usage                     vs Oct 1–14
-   Claude Code    48.2M   ~$212       ▲ 23%
-   Codex          12.1M    ~$41       ▼  8%
-   pi              3.4M    ~$18         new
-   Total          63.7M   ~$271       ▲ 15%
- ───────────────────────────────────────────
- Settings…                              Quit
+ [Ω]  2 agents working                       ← headline: working / needs you / all quiet
+      Claude Code · Codex                    ← which agents
+   ● ohmai          Claude Code      working · 8m
+   ● gwt            Codex            needs you · 2m   (amber, hourglass)
+ ───────────────────────────────────────────────
+ November so far
+ $6,061 est.               ▂▅▇▅▃▁ · · · ·    ← daily columns over a soft area for last month
+ ↑ 23% vs the same days in October
+ ● Claude Code              $6,061  2.1× Oct
+ ███████████████████████████████████          ← bullet bar: this month (solid) vs last month (light), shared scale
+ ● Codex                    208K tokens  new
+ ───────────────────────────────────────────────
+ ⚙ Settings…                              ⌘,
+ ⏻ Quit ohmai                             ⌘Q
 ```
 
-- **Month comparison** is month-to-date against the same days of last month, which is fairer than comparing against the whole of last month. Hovering a row shows last month's full total.
-- **Settings** holds the keep-awake toggles, lid-closed mode, battery and thermal thresholds, integrations, and the token-counting choice.
+- **Sessions** lead with the project; the agent is the second line. Each agent has a fixed categorical color (Claude blue, Codex orange, pi aqua), validated for color-vision deficiency in light and dark, always next to its name. Amber is reserved for "needs you".
+- **Month comparison:** the hero figure is month-to-date; the change is against the same days of last month, which is fairer than against the whole month. It's hidden while history is partial. Bars put both months on one scale, so they stay informative past 100%. Hover a bar or a sparkline column for the numbers; hover "est." for the explanation.
+- **Settings** is a sidebar window (General · Agents · Advanced) that's freed when closed. General: the app, launch at login, footprint, uninstall. Agents: what's watched, and the pi extension. Advanced: idle sleep, session timeouts, lid closed.
 
 ## Keep-awake mode
 
-**Automatic only** (default on, toggled in Settings): ohmai keeps the Mac awake while any agent session holds a lease, and lets it sleep once none do. There is deliberately no manual "keep awake now" override; `caffeinate` already does that.
+**Automatic only** (default on, toggled in Settings → Advanced as "Prevent idle sleep while an agent is working"): ohmai holds an idle-sleep assertion while any agent session holds a lease, and releases it once none do. There is deliberately no manual "keep awake now" override; `caffeinate` already does that.
 
 ## Domain terms
 

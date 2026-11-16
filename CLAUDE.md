@@ -1,6 +1,6 @@
 # ohmai
 
-A macOS menu bar app. It keeps the Mac awake while AI coding agents (Claude Code, Codex, pi) are working, and shows token usage for this month compared with last month. The name means "oh my ai" and nods to the ohm.
+A macOS menu bar app that shows your AI coding agents (Claude Code, Codex, pi) at a glance, and their token usage and estimated cost this month against last month. It can also prevent idle sleep while an agent works, with an opt-in lid-closed mode; that's deliberately secondary (Settings → Advanced, never mentioned in the dropdown or public descriptions). The name means "oh my ai" and nods to the ohm.
 
 ## Read first
 
@@ -42,7 +42,7 @@ The domain terms are in `docs/design.md`. Use them in type names.
 | **Adapter** | one per agent |
 
 Main components:
-- `Policy`: **pure** `decide(leases:power:prefs:) -> Decision`. No I/O, fully unit-tested.
+- `Policy`: **pure** `decide(leases:power:prefs:now:) -> Decision`. No I/O, fully unit-tested.
 - `PowerMonitor` (IOKit power sources, Low Power Mode, thermal state) and `AssertionManager` (IOPMAssertion + lid helper client)
 - Adapters turn hooks and file changes into `ActivityEvent`s and Ledger records. One adapter per agent, isolated from the others.
 - `Updater` protocol, with `NoopUpdater` until Sparkle is wired. Only `SparkleUpdater` may import Sparkle.

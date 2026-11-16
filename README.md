@@ -25,29 +25,6 @@ The name is "oh my ai", with a nod to the ohm (Ω), which is also its face.
 
 Claude's and Codex's files are undocumented formats, so an agent update can change them. ohmai parses them defensively: anything it doesn't recognize is ignored, never treated as "busy".
 
-## Power
-
-While an agent is working, ohmai can stop your Mac from going to sleep on its own (an idle-sleep assertion, the same mechanism as `caffeinate`), and lets it sleep as soon as the work stops. It's on by default; turn it off in Settings → General.
-
-It's deliberately conservative:
-
-- **Every claim expires.** A session must keep proving it's alive (its process is running and is the same process, and it keeps writing). An agent waiting on you holds the Mac awake for at most an hour; a "busy" agent that writes nothing for an hour is treated as stuck. Both limits are adjustable.
-- **It lets the Mac sleep** on battery below 50% (adjustable), in Low Power Mode, or when the Mac gets hot.
-- If ohmai quits or crashes, macOS drops its claim automatically.
-
-### Lid-closed mode (opt-in)
-
-Closing a MacBook's lid sleeps it even mid-task. If you turn on **Settings → Lid Closed**, ohmai installs a small helper so a *busy* agent can keep going with the lid shut (an agent waiting on you never does). This needs a helper that runs as root, which macOS asks you to approve.
-
-The helper is kept small and fails safe:
-
-- Its only action is `pmset -a disablesleep 0|1`. It accepts no other commands.
-- It only accepts requests from ohmai itself, checked by code signature (team and bundle ID).
-- **Dead-man switch:** ohmai must renew every 30 seconds. If it stops (crash, hang, quit), the helper turns sleep back on within 90 seconds by itself. It also turns sleep back on when it starts, when it's stopped, and on battery below 30% or when the Mac gets hot, checking these itself.
-- Turning lid-closed mode off removes the helper.
-
-If you ever want to check: `pmset -g | grep -i sleepdisabled` shows 0 (or nothing) when sleep is allowed. `sudo pmset -a disablesleep 0` restores it by hand.
-
 ## Install
 
 Requires macOS 26 or later. Download the notarized zip from this repo's Releases, unzip it, and move `ohmai.app` to `/Applications`. ohmai opens at login by default (Settings → General).
@@ -60,10 +37,31 @@ Requires macOS 26 or later. Download the notarized zip from this repo's Releases
 
 By hand, if needed:
 
-1. Settings → Lid Closed → off (removes the helper), or turn ohmai's items off in System Settings → General → Login Items & Extensions.
+1. Settings → Advanced → turn off **Keep working with the lid closed** (removes the helper), or turn ohmai's items off in System Settings → General → Login Items & Extensions.
 2. `pmset -g | grep -i sleepdisabled` should show 0; if not, `sudo pmset -a disablesleep 0`.
 3. Delete `~/Library/Application Support/ohmai`, `~/.pi/agent/extensions/ohmai.ts` (if you installed it) and run `defaults delete com.westvold.ohmai`.
 4. Move `ohmai.app` to the Trash.
+
+## Advanced: idle sleep
+
+Under **Settings → Advanced**, ohmai can prevent idle sleep while an agent is working, using a standard power assertion (the same mechanism as `caffeinate`). It's released as soon as agents stop or go quiet. The details:
+
+- **Every claim expires.** A session has to keep showing it's alive: its process is still running and is the same process, and it keeps writing. An agent waiting on you counts for at most an hour; a working agent that writes nothing for an hour is treated as stuck. Both limits are adjustable.
+- **Sleep is always allowed** on battery below 50% (adjustable), in Low Power Mode, and when the Mac gets hot.
+- If ohmai quits or crashes, macOS drops the assertion automatically.
+
+### Lid closed (optional, off by default)
+
+A MacBook sleeps when its lid closes, even mid-task. Turning on **Keep working with the lid closed** (Settings → Advanced) installs a small helper so a *working* agent can continue with the lid shut; an agent waiting on you never does. The helper runs as root, so macOS asks you to approve it in Login Items.
+
+It's deliberately minimal and fails safe:
+
+- Its only action is `pmset -a disablesleep 0|1`; it accepts no other commands.
+- It only accepts requests from ohmai, checked by code signature (team and bundle ID).
+- ohmai renews a 90-second lease every 30 seconds. If ohmai stops (crash, hang, quit), the helper turns sleep back on by itself within 90 seconds. It also turns sleep back on when it starts or stops, on battery below 30%, and when the Mac gets hot, checking these itself.
+- Turning the option off removes the helper.
+
+To check at any time: `pmset -g | grep -i sleepdisabled` shows 0 (or nothing) when sleep is allowed; `sudo pmset -a disablesleep 0` restores it by hand.
 
 ## Build from source
 
