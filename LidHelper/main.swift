@@ -33,9 +33,8 @@ let signalSources = [SIGTERM, SIGINT, SIGHUP].map { sig in
 
 let runningVersion = info["CFBundleVersion"] as? String ?? "0"
 let executable = Bundle.main.executableURL ?? URL(fileURLWithPath: CommandLine.arguments[0])
-let service = LidService(runtime: runtime, helperVersion: runningVersion)
-let delegate = LidListenerDelegate(
-    service: service, requirement: requirement,
+let service = LidService(
+    runtime: runtime, helperVersion: runningVersion,
     staleBinary: { BinaryVersion.isStale(running: runningVersion, onDisk: BinaryVersion.onDisk(executable)) },
     restart: {
         // Sleep back on first, then exit cleanly (launchd won't respawn on success; the
@@ -45,6 +44,7 @@ let delegate = LidListenerDelegate(
             exit(0)
         }
     })
+let delegate = LidListenerDelegate(service: service, requirement: requirement)
 let listener = NSXPCListener(machServiceName: LidHelperXPC.machServiceName)
 listener.delegate = delegate
 listener.resume()

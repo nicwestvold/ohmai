@@ -63,13 +63,28 @@ public final class LidRuntime {
 }
 
 /// The exported XPC object. Calls arrive on XPC's queue and hop to the main actor.
+///
+/// Every call first checks for a stale binary. XPC only delivers calls from peers that meet
+/// the connection's code-signing requirement, so only ohmai itself can trigger a restart.
 public final class LidService: NSObject, LidHelperProtocol, Sendable {
     private let runtime: LidRuntime
     private let helperVersion: String
+    private let staleBinary: @Sendable () -> Bool
+    private let restart: @Sendable () -> Void
 
-    public init(runtime: LidRuntime, helperVersion: String) {
+    /// - `staleBinary`: true when the app was updated under us (our file on disk is a newer
+    ///   build than this process). `restart` then turns sleep back on and exits; launchd
+    ///   starts the new binary on the app's next request. The pending call gets no reply,
+    ///   so the app sees the helper as unreachable and retries.
+    public init(
+        runtime: LidRuntime, helperVersion: String,
+        staleBinary: @escaping @Sendable () -> Bool = { false },
+        restart: @escaping @Sendable () -> Void = {}
+    ) {
         self.runtime = runtime
         self.helperVersion = helperVersion
+        self.staleBinary = staleBinary
+        self.restart = restart
     }
 
     public func engage(leaseSeconds: Int, batteryFloorPercent: Int, reply: @escaping @Sendable (Bool, String?) -> Void) {
@@ -99,43 +114,34 @@ public final class LidService: NSObject, LidHelperProtocol, Sendable {
     }
 
     public func version(reply: @escaping @Sendable (String) -> Void) {
-        reply(helperVersion)
+        let helperVersion = helperVersion
+        onMain { _ in reply(helperVersion) }
     }
 
     private func onMain(_ body: @escaping @MainActor @Sendable (LidRuntime) -> Void) {
+        if staleBinary() {
+            log.notice("binary on disk is a newer build; restarting so launchd runs it")
+            restart()
+            return
+        }
         let runtime = runtime
         DispatchQueue.main.async { MainActor.assumeIsolated { body(runtime) } }
     }
 }
 
 /// Accepts connections only from ohmai itself, matched by code-signing requirement.
+/// It does nothing else: anything a caller can trigger happens in `LidService`, after XPC
+/// has checked the caller's signature.
 public final class LidListenerDelegate: NSObject, NSXPCListenerDelegate, Sendable {
     private let service: LidService
     private let requirement: String
-    private let staleBinary: @Sendable () -> Bool
-    private let restart: @Sendable () -> Void
 
-    /// - `staleBinary`: true when the app was updated under us (our file on disk is a newer
-    ///   build than this process). `restart` then turns sleep back on and exits; launchd
-    ///   starts the new binary on the app's next request.
-    public init(
-        service: LidService, requirement: String,
-        staleBinary: @escaping @Sendable () -> Bool = { false },
-        restart: @escaping @Sendable () -> Void = {}
-    ) {
+    public init(service: LidService, requirement: String) {
         self.service = service
         self.requirement = requirement
-        self.staleBinary = staleBinary
-        self.restart = restart
     }
 
     public func listener(_ listener: NSXPCListener, shouldAcceptNewConnection connection: NSXPCConnection) -> Bool {
-        // A new connection usually means the app (re)launched, e.g. after an update.
-        if staleBinary() {
-            log.notice("binary on disk is a newer build; restarting so launchd runs it")
-            restart()
-            return false
-        }
         connection.setCodeSigningRequirement(requirement)
         connection.exportedInterface = NSXPCInterface(with: LidHelperProtocol.self)
         connection.exportedObject = service

@@ -189,6 +189,7 @@ Power assertions don't stop the sleep that happens when you close the lid (unles
 
 **Caller check:** the helper accepts connections only from ohmai, matched by code-signing requirement (team ID + bundle ID), using `NSXPCConnection.setCodeSigningRequirement`. The app checks the helper the same way.
 - The team ID comes from the helper's embedded Info.plist (`OHMAI_TEAM_ID`). If it's missing or malformed, the helper resets sleep and exits: it fails closed.
+- **After an update**, the binary on disk is a newer build than the running helper. The helper notices on the next request, resets sleep and exits so launchd starts the new one. It checks on requests, not on connect, because XPC only delivers requests from callers that passed the signature check, so no other process can make it restart.
 
 **It only ever runs** `pmset -a disablesleep 0|1`. It takes no arbitrary commands.
 
