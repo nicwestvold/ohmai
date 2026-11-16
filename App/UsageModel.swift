@@ -24,7 +24,7 @@ final class UsageModel {
 
     func start() {
         do {
-            let importer = try UsageImporter(database: Self.databaseURL)
+            let importer = try UsageImporter(database: Self.databaseURL, sources: Self.sources)
             self.importer = importer
             importing = true
             Task(priority: .background) {
@@ -69,6 +69,16 @@ final class UsageModel {
             }
             self.draining = false
         }
+    }
+
+    static var sources: [UsageImporter.Source] {
+        #if DEBUG
+        // Debug builds only: read transcripts from a scratch home (demo data, screenshots).
+        if let home = ProcessInfo.processInfo.environment["OHMAI_USAGE_HOME"] {
+            return UsageImporter.defaultSources(home: URL(fileURLWithPath: home, isDirectory: true))
+        }
+        #endif
+        return UsageImporter.defaultSources()
     }
 
     static var databaseURL: URL {

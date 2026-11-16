@@ -37,6 +37,11 @@ run = "scripts/publish.sh"
 description = "Regenerate the Ω face artwork from scripts/make-icons.py (needs rsvg-convert)"
 run = "scripts/make-icons.py"
 
+[tasks.readme-shots]
+description = "Regenerate the README images in docs/images from the Debug build, using made-up demo data"
+depends = ["build"]
+run = "scripts/readme-shots.py"
+
 [tasks.clean]
 description = "Remove generated and build output"
 run = "rm -rf ohmai.xcodeproj Packages/OhmaiCore/.build build"

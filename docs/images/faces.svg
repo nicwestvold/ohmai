@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="344" height="122" viewBox="0 0 344 122">
+<rect x="0" y="0" width="88" height="88" rx="20" fill="#1C1C22"/>
+<g transform="translate(15.200000000000003 15.200000000000003) scale(2.4)">
+<path d="M4 20H8.4V16.7A7 7 0 1 1 15.6 16.7V20H20M8 10.5q1.3 1.2 2.6 0M13.4 10.5q1.3 1.2 2.6 0" fill="none" stroke="#F3C04F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<text x="44.0" y="112" text-anchor="middle" fill="#8B8B93" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15">idle</text>
+<rect x="128" y="0" width="88" height="88" rx="20" fill="#1C1C22"/>
+<g transform="translate(143.2 15.200000000000003) scale(2.4)">
+<path d="M4 20H8.4V16.7A7 7 0 1 1 15.6 16.7V20H20" fill="none" stroke="#F3C04F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8.4 16.7A7 7 0 1 1 15.6 16.7ZM8.0 10a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0M13.399999999999999 10a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0" fill="#F3C04F" fill-rule="evenodd"/>
+</g>
+<text x="172.0" y="112" text-anchor="middle" fill="#8B8B93" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15">working</text>
+<rect x="256" y="0" width="88" height="88" rx="20" fill="#1C1C22"/>
+<g transform="translate(271.2 15.200000000000003) scale(2.4)">
+<path d="M4 20H8.4V16.7A7 7 0 1 1 15.6 16.7V20H20" fill="none" stroke="#F3C04F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M8.4 16.7A7 7 0 1 1 15.6 16.7ZM8.0 10a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0M13.399999999999999 10a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0M18.2 3.2a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0 -5.2 0" fill="#F3C04F" fill-rule="evenodd"/>
+</g>
+<text x="300.0" y="112" text-anchor="middle" fill="#8B8B93" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15">needs you</text>
+</svg>
